@@ -1,26 +1,24 @@
 {
-  "name": "krishisetu-client",
+  "name": "krishisetu-server",
   "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "migrate": "node src/database/migrate.js",
+    "seed": "node src/database/seed.js",
+    "test": "vitest run"
   },
   "dependencies": {
-    "axios": "^1.7.9",
-    "lucide-react": "^0.469.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "react-router-dom": "^7.1.1"
+    "better-sqlite3": "latest",
+    "cors": "latest",
+    "dotenv": "latest",
+    "express": "latest",
+    "zod": "latest"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.0.0",
-    "@vitejs/plugin-react": "^4.3.4",
-    "autoprefixer": "^10.7.0",
-    "postcss": "^8.5.33",
-    "tailwindcss": "^3.4.19",
-    "vite": "^6.0.7"
+    "supertest": "latest",
+    "vitest": "latest"
   }
 }
