@@ -1,0 +1,369 @@
+{
+  "info": {
+    "_postman_id": "kisansetu-api-collection-v1",
+    "name": "KisanSetu Backend API Collection",
+    "description": "Complete Postman collection for KisanSetu – Agricultural Policy, Loan & Subsidy Transparency Platform (GT-01 Option A)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "farmerToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "bankToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "demoFarmerId",
+      "value": "a0000000-0000-0000-0000-000000000001",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Authentication",
+      "item": [
+        {
+          "name": "Farmer Login (Ramesh)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set('farmerToken', jsonData.data.token);",
+                  "    pm.collectionVariables.set('demoFarmerId', jsonData.data.farmerId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"farmer_ramesh\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "Bank Officer Login (Sharma)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.data && jsonData.data.token) {",
+                  "    pm.collectionVariables.set('bankToken', jsonData.data.token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"bank_officer_sharma\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Farmer Portal",
+      "item": [
+        {
+          "name": "Get Farmer Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/farmers/{{demoFarmerId}}/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["farmers", "{{demoFarmerId}}", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "Get Registered Land Records",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/farmers/{{demoFarmerId}}/land-records",
+              "host": ["{{baseUrl}}"],
+              "path": ["farmers", "{{demoFarmerId}}", "land-records"]
+            }
+          }
+        },
+        {
+          "name": "Get Active Loans Ledger",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/farmers/{{demoFarmerId}}/loans",
+              "host": ["{{baseUrl}}"],
+              "path": ["farmers", "{{demoFarmerId}}", "loans"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Entitlement Calculators",
+      "item": [
+        {
+          "name": "Evaluate KCC Interest Subvention (MISS 4% prompt)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"farmerId\": \"{{demoFarmerId}}\",\n  \"loanId\": 1,\n  \"loanAmount\": 150000.00,\n  \"loanType\": \"KCC_CROP_LOAN\",\n  \"disbursementDate\": \"2023-05-10\",\n  \"repaymentDate\": \"2024-05-09\",\n  \"repaymentStatus\": \"CLOSED\",\n  \"actualInterestCharged\": 10500.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/entitlements/kcc/evaluate",
+              "host": ["{{baseUrl}}"],
+              "path": ["entitlements", "kcc", "evaluate"]
+            }
+          }
+        },
+        {
+          "name": "Verify MSP Net Mandi Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"farmerId\": \"{{demoFarmerId}}\",\n  \"crop\": \"PADDY_GRADE_A\",\n  \"cropGrade\": \"GRADE_A\",\n  \"marketingSeason\": \"KHARIF_2023\",\n  \"acceptedQuantity\": 50.00,\n  \"quantityUnit\": \"QUINTAL\",\n  \"procurementCenter\": \"Arang Mandi Center #4\",\n  \"documentedDeductions\": 150.00,\n  \"actualPayment\": 95000.00,\n  \"receiptReference\": \"MSP-LIVE-TEST-001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/entitlements/msp/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["entitlements", "msp", "verify"]
+            }
+          }
+        },
+        {
+          "name": "Reconcile PMFBY Insurance Payout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"farmerId\": \"{{demoFarmerId}}\",\n  \"insurancePolicyNumber\": \"PMFBY-LIVE-TEST-001\",\n  \"crop\": \"Paddy\",\n  \"season\": \"KHARIF_2023\",\n  \"sanctionedClaimAmount\": 45000.00,\n  \"actualPayout\": 30000.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/entitlements/insurance/reconcile",
+              "host": ["{{baseUrl}}"],
+              "path": ["entitlements", "insurance", "reconcile"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Bank Cross-Verification",
+      "item": [
+        {
+          "name": "Search Farmers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bankToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/bank/farmers/search?query=Ramesh",
+              "host": ["{{baseUrl}}"],
+              "path": ["bank", "farmers", "search"],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "Ramesh"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Verify Loan Application (Duplicate Financing Check)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{bankToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"farmerId\": \"{{demoFarmerId}}\",\n  \"landRecordIds\": [3],\n  \"requestedLoanAmount\": 200000.00,\n  \"proposedPledgedArea\": 3.20,\n  \"declaredExistingMortgage\": false\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/bank/verify-application",
+              "host": ["{{baseUrl}}"],
+              "path": ["bank", "verify-application"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Grievances & Discrepancies",
+      "item": [
+        {
+          "name": "Scan & Persist Discrepancies",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"farmerId\": \"{{demoFarmerId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/discrepancies/detect",
+              "host": ["{{baseUrl}}"],
+              "path": ["discrepancies", "detect"]
+            }
+          }
+        },
+        {
+          "name": "Generate Hindi Grievance",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"farmerId\": \"{{demoFarmerId}}\",\n  \"discrepancyId\": 1,\n  \"language\": \"hi\",\n  \"additionalNotes\": \"कृषि मंडी में तौल पर्ची के अनुसार पूरी राशि का भुगतान नहीं हुआ है।\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/grievances/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["grievances", "generate"]
+            }
+          }
+        },
+        {
+          "name": "Download Grievance PDF Document",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{farmerToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/grievances/1/pdf",
+              "host": ["{{baseUrl}}"],
+              "path": ["grievances", "1", "pdf"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
