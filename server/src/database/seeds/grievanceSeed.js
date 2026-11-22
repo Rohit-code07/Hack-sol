@@ -1,18 +1,53 @@
 // SYNTHETIC DEMO DATA. Not real farmer, land or bank record.
 
-// 10 grievances (GRV-0001 to GRV-0010), all farmer_id values in FRM-0001..FRM-0025
-// Status mix: 4 OPEN, 3 IN_REVIEW, 3 RESOLVED
+// 5 grievances (GRV-0001 to GRV-0005) for FRM-0002, 0005, 0008, 0012, 0019.
+// Status mix: 2 OPEN, 2 IN_REVIEW, 1 RESOLVED.
 export const grievanceRows = [
-  { id: "GRV-0001", reference_number: "GRV-2025-0001", farmer_id: "FRM-0004", category: "PAYMENT_DELAY", description: "Income support installment not received for the current cycle.", status: "OPEN" },
-  { id: "GRV-0002", reference_number: "GRV-2025-0002", farmer_id: "FRM-0011", category: "PAYMENT_DELAY", description: "Payment still pending even though eligibility is confirmed.", status: "OPEN" },
-  { id: "GRV-0003", reference_number: "GRV-2025-0003", farmer_id: "FRM-0003", category: "LAND_RECORD_ERROR", description: "Land record shows father's name as the registered owner.", status: "IN_REVIEW" },
-  { id: "GRV-0004", reference_number: "GRV-2025-0004", farmer_id: "FRM-0007", category: "LAND_RECORD_ERROR", description: "Owner name on survey SRV-303/1 does not match the applicant.", status: "IN_REVIEW" },
-  { id: "GRV-0005", reference_number: "GRV-2025-0005", farmer_id: "FRM-0010", category: "ELIGIBILITY", description: "Payment put on hold because of a disputed land record.", status: "IN_REVIEW" },
-  { id: "GRV-0006", reference_number: "GRV-2025-0006", farmer_id: "FRM-0020", category: "PAYMENT_DELAY", description: "Installment pending for more than two cycles.", status: "OPEN" },
-  { id: "GRV-0007", reference_number: "GRV-2025-0007", farmer_id: "FRM-0013", category: "BANK_DETAILS", description: "Partial amount credited, remaining amount not received.", status: "OPEN" },
-  { id: "GRV-0008", reference_number: "GRV-2025-0008", farmer_id: "FRM-0015", category: "LAND_RECORD_ERROR", description: "Registered owner name corrected after the request.", status: "RESOLVED" },
-  { id: "GRV-0009", reference_number: "GRV-2025-0009", farmer_id: "FRM-0002", category: "OTHER", description: "Request to update the village name in the profile.", status: "RESOLVED" },
-  { id: "GRV-0010", reference_number: "GRV-2025-0010", farmer_id: "FRM-0021", category: "BANK_DETAILS", description: "Bank account details updated and confirmed.", status: "RESOLVED" },
+  {
+    id: "GRV-0001",
+    reference_number: "KS-GRV-2026-000001",
+    farmer_id: "FRM-0002",
+    category: "WRONG_LAND_RECORD",
+    description:
+      "Mere khet ka survey number SRV-101/2 ek aur kisan ke record mein bhi dikh raha hai. Kripya land record ki jaanch karke sudhar karein.",
+    status: "IN_REVIEW",
+  },
+  {
+    id: "GRV-0002",
+    reference_number: "KS-GRV-2026-000002",
+    farmer_id: "FRM-0005",
+    category: "ENTITLEMENT_NOT_RECEIVED",
+    description:
+      "DEMO_SCHEME_A ki raashi abhi tak mere bank account mein nahi aayi hai, jabki baaki schemes ka paisa mil chuka hai. Kripya status check karein.",
+    status: "OPEN",
+  },
+  {
+    id: "GRV-0003",
+    reference_number: "KS-GRV-2026-000003",
+    farmer_id: "FRM-0008",
+    category: "ENTITLEMENT_NOT_RECEIVED",
+    description:
+      "DEMO_SCHEME_B shows as pending for me even though my eligibility was confirmed earlier. Please check why the payment has not been released.",
+    status: "OPEN",
+  },
+  {
+    id: "GRV-0004",
+    reference_number: "KS-GRV-2026-000004",
+    farmer_id: "FRM-0012",
+    category: "LOAN_ISSUE",
+    description:
+      "The outstanding amount shown for my crop loan does not match my bank passbook entries. I request a verification of the loan record.",
+    status: "IN_REVIEW",
+  },
+  {
+    id: "GRV-0005",
+    reference_number: "KS-GRV-2026-000005",
+    farmer_id: "FRM-0019",
+    category: "OTHER",
+    description:
+      "Mera mobile number profile mein purana dikh raha hai. Kripya naya number update kar dein taaki SMS alerts sahi number par aayein.",
+    status: "RESOLVED",
+  },
 ];
 
 /**
