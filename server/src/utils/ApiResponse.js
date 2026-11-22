@@ -1,26 +1,20 @@
-import { HTTP_STATUS } from "./ApiError.js";
-
 /**
- * Sends a success envelope: { success: true, data, meta? }.
- *
+ * Success response envelope bhejta hai.
  * @param {import("express").Response} res
  * @param {unknown} data
- * @param {{ status?: number, meta?: unknown }} [options]
+ * @param {{ status?: number, meta?: object }} [options]
  */
 export function sendSuccess(res, data, options = {}) {
-  const { status = HTTP_STATUS.OK, meta } = options;
+  const { status = 200, meta } = options;
   const body = { success: true, data };
-
-  if (meta !== undefined) {
+  if (meta) {
     body.meta = meta;
   }
-
   return res.status(status).json(body);
 }
 
 /**
- * Sends an error envelope: { success: false, error: { code, message } }.
- *
+ * Error response envelope bhejta hai.
  * @param {import("express").Response} res
  * @param {number} statusCode
  * @param {string} code

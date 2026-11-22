@@ -1,17 +1,14 @@
 import { randomUUID } from "node:crypto";
 
-const ID_RANDOM_LENGTH = 8;
-
-// Note: grievance reference numbers are NOT created here.
-// They are created in grievanceService using a counter.
+const ID_SUFFIX_LENGTH = 8;
 
 /**
- * Creates an ID like "GRV-3F9A1C7B".
- *
- * @param {string} prefix - ID prefix, for example "GRV" or "VER".
+ * Prefix ke saath unique ID banata hai, jaise "GRV-1A2B3C4D".
+ * Grievance reference number yahan nahi banta, grievanceService mein counter se banega.
+ * @param {string} prefix
  * @returns {string}
  */
 export function generateId(prefix) {
-  const random = randomUUID().replaceAll("-", "").slice(0, ID_RANDOM_LENGTH).toUpperCase();
-  return `${prefix}-${random}`;
+  const suffix = randomUUID().replace(/-/g, "").slice(0, ID_SUFFIX_LENGTH).toUpperCase();
+  return `${prefix}-${suffix}`;
 }

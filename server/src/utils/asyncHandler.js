@@ -1,11 +1,9 @@
 /**
- * Wraps an async route handler so rejected promises are passed to next(err).
- *
- * @param {(req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) => Promise<unknown>} handler
- * @returns {import("express").RequestHandler}
+ * Async route handler ke errors ko Express error middleware tak pahunchata hai.
+ * @param {(req: import("express").Request, res: import("express").Response, next: import("express").NextFunction) => Promise<unknown>} fn
  */
-export function asyncHandler(handler) {
+export function asyncHandler(fn) {
   return (req, res, next) => {
-    Promise.resolve(handler(req, res, next)).catch(next);
+    Promise.resolve(fn(req, res, next)).catch(next);
   };
 }
