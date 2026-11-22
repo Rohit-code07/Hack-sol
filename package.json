@@ -1,0 +1,8 @@
+{
+  "name": "krishisetu",
+  "version": "1.0.0",
+  "private": true,
+  "autoprefixer": "...",
+"postcss": "...",
+"tailwindcss": "^3...."
+}

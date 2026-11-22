@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-forest: #14532D;
+  --color-primary: #16A34A;
+  --color-mint: #DCFCE7;
+  --color-canvas: #F8FAFC;
+  --color-ink: #1E293B;
+  --color-warning: #F59E0B;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: Inter, system-ui, sans-serif;
+}
