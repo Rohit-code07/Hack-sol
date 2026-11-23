@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Vibrant KCC Seal (Full Color, Solid Artwork) -->
+  <circle cx="60" cy="60" r="56" stroke="#1E1B4B" stroke-width="2"/>
+  <circle cx="60" cy="60" r="51" stroke="#138808" stroke-width="1.5" stroke-dasharray="3 3"/>
+  
+  <!-- Credit Card Shape -->
+  <rect x="28" y="36" width="64" height="40" rx="4" fill="#1E1B4B" stroke="#D97706" stroke-width="2"/>
+  <line x1="28" y1="46" x2="92" y2="46" stroke="#D97706" stroke-width="2"/>
+  <rect x="34" y="54" width="12" height="10" rx="2" fill="#FDE68A" stroke="#B45309" stroke-width="1"/>
+  <circle cx="80" cy="62" r="5" fill="#EF4444" opacity="0.8"/>
+  <circle cx="73" cy="62" r="5" fill="#F59E0B" opacity="0.8"/>
+
+  <!-- Sprout of Prosperity in Emerald Green -->
+  <path d="M60 36V18" stroke="#138808" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M60 26C52 24 48 16 54 12C60 12 60 22 60 26Z" fill="#86EFAC" stroke="#138808" stroke-width="1.8"/>
+  <path d="M60 22C68 20 72 12 66 8C60 8 60 18 60 22Z" fill="#86EFAC" stroke="#138808" stroke-width="1.8"/>
+
+  <!-- Bottom Badge Ribbon -->
+  <rect x="18" y="96" width="84" height="18" rx="3" fill="#1E1B4B" stroke="#138808" stroke-width="1.5"/>
+  <text x="60" y="108" text-anchor="middle" font-family="'Tiro Devanagari Hindi', serif" font-size="8.5" font-weight="700" fill="#FFFFFF" letter-spacing="0.5">किसान क्रेडिट • KCC</text>
+</svg>

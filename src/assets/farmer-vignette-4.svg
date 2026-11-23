@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Vibrant Tractor & Farm Mechanization (Full Color, Solid Artwork) -->
+  <circle cx="60" cy="60" r="56" stroke="#1E1B4B" stroke-width="2"/>
+  <circle cx="60" cy="60" r="51" stroke="#8C3B1E" stroke-width="1.5" stroke-dasharray="3 3"/>
+
+  <!-- Golden Rising Sun -->
+  <circle cx="90" cy="30" r="12" fill="#FF9933" opacity="0.35" stroke="#FF9933" stroke-width="1.5"/>
+  <line x1="90" y1="16" x2="90" y2="12" stroke="#FF9933" stroke-width="1.8" stroke-linecap="round"/>
+  <line x1="104" y1="30" x2="108" y2="30" stroke="#FF9933" stroke-width="1.8" stroke-linecap="round"/>
+
+  <!-- Ploughed Field Soil -->
+  <path d="M12 90C45 80 75 80 108 90V100H12V90Z" fill="#F6E5DE" stroke="#8C3B1E" stroke-width="1.5"/>
+  <line x1="20" y1="98" x2="42" y2="84" stroke="#8C3B1E" stroke-width="1.8" stroke-linecap="round"/>
+  <line x1="44" y1="100" x2="62" y2="84" stroke="#8C3B1E" stroke-width="1.8" stroke-linecap="round"/>
+  <line x1="72" y1="100" x2="82" y2="84" stroke="#8C3B1E" stroke-width="1.8" stroke-linecap="round"/>
+
+  <!-- Tractor Body in Terracotta Clay (#B85028) -->
+  <path d="M46 64H62L70 68H84V78H72L62 74H46V64Z" fill="#B85028" stroke="#1E1B4B" stroke-width="1.8" stroke-linejoin="round"/>
+  <path d="M50 54H60V64H50V54Z" fill="#1E1B4B"/> <!-- Cab roof/rollbar -->
+  <line x1="80" y1="60" x2="80" y2="68" stroke="#1E1B4B" stroke-width="2" stroke-linecap="round"/> <!-- Silencer -->
+
+  <!-- Big Rear Wheel -->
+  <circle cx="48" cy="74" r="11" fill="#1E1B4B" stroke="#B85028" stroke-width="1.8"/>
+  <circle cx="48" cy="74" r="5" fill="#E8DEC4"/>
+  <line x1="48" y1="63" x2="48" y2="85" stroke="#FFFFFF" stroke-width="1.2"/>
+  <line x1="37" y1="74" x2="59" y2="74" stroke="#FFFFFF" stroke-width="1.2"/>
+
+  <!-- Small Front Wheel -->
+  <circle cx="78" cy="78" r="7" fill="#1E1B4B" stroke="#B85028" stroke-width="1.8"/>
+  <circle cx="78" cy="78" r="3" fill="#E8DEC4"/>
+
+  <!-- Bottom Badge Ribbon -->
+  <rect x="20" y="96" width="80" height="18" rx="3" fill="#1E1B4B" stroke="#B85028" stroke-width="1.5"/>
+  <text x="60" y="108" text-anchor="middle" font-family="'Tiro Devanagari Hindi', serif" font-size="8.5" font-weight="700" fill="#FFFFFF" letter-spacing="0.5">उन्नत कृषि • AGRI</text>
+</svg>
