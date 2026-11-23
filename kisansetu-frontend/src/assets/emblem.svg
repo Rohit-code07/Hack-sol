@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+  <!-- Vibrant State Emblem / Satyameva Jayate (Full Color, Solid Artwork) -->
+  <circle cx="40" cy="40" r="36" stroke="#1E1B4B" stroke-width="2"/>
+  <circle cx="40" cy="40" r="31" stroke="#FF9933" stroke-width="1.5" stroke-dasharray="3 2"/>
+  <circle cx="40" cy="24" r="7" fill="#FDE68A" stroke="#D97706" stroke-width="2"/>
+  
+  <path d="M22 54C30 44 50 44 58 54" stroke="#B85028" stroke-width="3" stroke-linecap="round"/>
+  <path d="M40 50V34M40 34C40 29 46 28 49 31M40 38C35 36 31 38 31 41" stroke="#138808" stroke-width="2.6" stroke-linecap="round"/>
+  <circle cx="40" cy="54" r="3" fill="#1E1B4B"/>
+  <text x="40" y="69" text-anchor="middle" font-family="'Tiro Devanagari Hindi', serif" font-size="7.5" font-weight="700" fill="#1E1B4B" letter-spacing="0.5">सत्यमेव जयते</text>
+</svg>
