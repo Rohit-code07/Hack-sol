@@ -18,7 +18,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class MspVerificationRequest {
 
-    @NotNull(message = "Farmer ID is required")
     private UUID farmerId;
 
     @NotBlank(message = "Crop name is required")

@@ -1,0 +1,134 @@
+<USER_REQUEST>
+# KisanSetu – AI Service Implementation & Integration
+
+Act as a Senior AI Engineer specializing in production-grade AI systems, Python, FastAPI, RAG, LangChain, and backend integration.
+
+Your task is to IMPLEMENT, TEST, and FULLY INTEGRATE the AI service into my existing KisanSetu Agricultural Policy, Loan & Subsidy Transparency Platform.
+
+Do not merely create files, provide suggestions, or write documentation. Inspect the existing project, understand its architecture, and implement the complete working AI service.
+
+---
+
+## 1. PROJECT CONTEXT
+
+KisanSetu is a government-tech platform designed to help farmers understand agricultural schemes, financial entitlements, KCC loans, MSP payments, crop insurance, land verification, and grievances.
+
+The platform consists of:
+
+- Frontend: React + Vite
+- Main Backend: Spring Boot 3.3.5, Java 21
+- Database: MySQL 8.4
+- AI Service: Python + FastAPI
+- Authentication: JWT through Spring Boot
+- AI: LLM integration, RAG, embeddings, vector database
+
+The AI service must integrate with the existing backend and frontend.
+
+### Architecture
+
+React Frontend
+↓
+Spring Boot REST API
+↓
+Python FastAPI AI Service
+↓
+LLM + RAG + Vector Database
+
+The frontend must NEVER call the Python AI service directly.
+
+Spring Boot must remain the primary API gateway and enforce authentication, authorization, and user permissions.
+
+---
+
+# 2. FIRST: AUDIT THE EXISTING PROJECT
+
+Before writing or modifying code:
+
+1. Locate the actual backend directory.
+2. Locate the actual frontend directory.
+3. Locate the actual AI service directory.
+4. Inspect existing AI-related files.
+5. Inspect existing Spring Boot AI integration.
+6. Inspect frontend AI features and UI.
+7. Inspect existing environment variables.
+8. Inspect existing API contracts.
+9. Identify incomplete AI functionality.
+10. Identify duplicate AI implementations.
+
+Do not create a second AI service if one already exists.
+
+Do not create unnecessary duplicate directories.
+
+Use the actual project paths.
+
+Preserve existing working functiona
+<truncated 14378 bytes>
+ific confidential responses incorrectly.
+
+---
+
+# 21. FINAL ACCEPTANCE CRITERIA
+
+The implementation is complete only when:
+
+- The AI service starts successfully.
+- FastAPI health endpoint works.
+- ChromaDB persists data.
+- PDF policy documents can be uploaded.
+- Documents are successfully processed and indexed.
+- RAG retrieval returns relevant chunks.
+- Policy questions receive grounded answers.
+- Hindi queries work.
+- English queries work.
+- Grievance generation works.
+- Discrepancy explanation works.
+- Spring Boot communicates with FastAPI.
+- JWT-protected frontend flows work.
+- React uses Spring Boot endpoints only.
+- AI responses display correctly in the existing UI.
+- No frontend mock AI responses remain.
+- No UI redesign has occurred.
+- AI service failure does not break the main platform.
+- Automated tests are executed.
+- The actual end-to-end flow is tested.
+
+---
+
+# 22. FINAL REPORT
+
+After implementation, provide an honest report containing:
+
+1. AI service architecture.
+2. Files created.
+3. Files modified.
+4. Features implemented.
+5. RAG pipeline details.
+6. Embedding model used.
+7. Vector database configuration.
+8. LLM provider configuration.
+9. Spring Boot integration endpoints.
+10. Frontend components integrated.
+11. Security implementation.
+12. Environment variables required.
+13. Commands to start the service.
+14. Docker commands.
+15. Test results.
+16. Actual errors encountered.
+17. Features that remain incomplete.
+
+Do not claim a feature is implemented unless it is actually implemented and tested.
+
+Do not fake test results.
+
+Do not replace real functionality with mock responses.
+
+Do not stop after creating the architecture.
+
+**Implement the complete AI service and connect it to the existing KisanSetu application.**
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-11-24T00:39:46+05:30.
+
+The user's current state is as follows:
+Active Document: user is viewing tab agent-tab-12 (http://localhost:5173/farmer, "Farmer Overview • KisanSetu") (LANGUAGE_UNSPECIFIED)
+</ADDITIONAL_METADATA>

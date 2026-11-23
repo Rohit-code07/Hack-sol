@@ -71,7 +71,7 @@ export default function ApplicationAuditPage() {
   const handleStatusUpdate = async (newStatus) => {
     if (!selectedApp) return;
     try {
-      await updateApplicationStatus(selectedApp.id, newStatus);
+      await updateApplicationStatus(selectedApp.id, newStatus, '', selectedApp.farmerId);
       toast.success(
         newStatus === 'APPROVED'
           ? t('bank.appApproved', 'Application approved successfully')

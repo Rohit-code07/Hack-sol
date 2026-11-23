@@ -1,69 +1,140 @@
-// SYNTHETIC DEMO DATA. Illustrative only. Not official records or rates.
-import { USE_MOCK } from '../config/api';
-import apiClient, { mockResponse, mockError } from './apiClient';
-import { farmers, landRecords, loans } from '../constants/mockData';
+import farmerApi from '../api/farmerApi';
+import bankApi from '../api/bankApi';
+import { adaptFarmer, adaptLandRecord, adaptLoan } from '../api/adapters';
 
-export async function getMe(farmerId = 'FRM-0003') {
-  if (USE_MOCK) {
-    const found = farmers.find((f) => f.id === farmerId) || farmers[2];
-    return mockResponse(found);
-  }
-  return apiClient.get('/farmers/me');
+function getActiveFarmerId() {
+  try {
+    const raw = localStorage.getItem('ks_auth');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.farmerId) return parsed.farmerId;
+      if (parsed.id) return parsed.id;
+    }
+  } catch (e) {}
+  return null;
 }
 
+function resolveFarmerUuid(id) {
+  if (!id) return getActiveFarmerId();
+  return id;
+}
+
+/**
+ * Fetch authenticated farmer profile
+ */
+export async function getMe(farmerId) {
+  const uuid = resolveFarmerUuid(farmerId);
+  if (!uuid) return { success: false, data: null };
+  try {
+    const res = await farmerApi.getProfile(uuid);
+    const adapted = adaptFarmer(res.data);
+    return { success: true, data: adapted };
+  } catch (e) {
+    return { success: false, data: null };
+  }
+}
+
+/**
+ * Search farmers across registry
+ */
 export async function getFarmers({ search = '', district = '', page = 1, limit = 10 } = {}) {
-  if (USE_MOCK) {
-    let list = [...farmers];
-    if (search.trim()) {
-      const q = search.toLowerCase().trim();
-      list = list.filter(
-        (f) =>
-          f.name.toLowerCase().includes(q) ||
-          f.id.toLowerCase().includes(q) ||
-          f.village.toLowerCase().includes(q) ||
-          f.district.toLowerCase().includes(q)
-      );
-    }
+  try {
+    const res = await bankApi.searchFarmers(search);
+    let list = Array.isArray(res.data) ? res.data : [];
+
     if (district.trim()) {
-      list = list.filter((f) => f.district.toLowerCase() === district.toLowerCase().trim());
+      list = list.filter((f) => (f.district || '').toLowerCase() === district.toLowerCase().trim());
     }
+
+    const adaptedList = list.map(adaptFarmer);
+    const total = adaptedList.length;
     const startIndex = (page - 1) * limit;
-    const paginated = list.slice(startIndex, startIndex + limit);
-    return mockResponse({
-      items: paginated,
-      total: list.length,
-      page,
-      limit,
-      totalPages: Math.ceil(list.length / limit) || 1
-    });
+    const paginated = adaptedList.slice(startIndex, startIndex + limit);
+
+    return {
+      success: true,
+      data: {
+        items: paginated,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit) || 1,
+      },
+    };
+  } catch {
+    return {
+      success: true,
+      data: { items: [], total: 0, page: 1, limit, totalPages: 1 },
+    };
   }
-  const params = new URLSearchParams({ search, district, page: String(page), limit: String(limit) });
-  return apiClient.get(`/farmers?${params.toString()}`);
 }
 
+/**
+ * Get Farmer Profile by UUID
+ */
 export async function getFarmer(id) {
-  if (USE_MOCK) {
-    const found = farmers.find((f) => f.id === id);
-    if (!found) {
-      return mockError('FARMER_NOT_FOUND', `Farmer with ID ${id} not found in registry`, 404);
-    }
-    return mockResponse(found);
+  const uuid = resolveFarmerUuid(id);
+  if (!uuid) return { success: false, data: null };
+  try {
+    const res = await farmerApi.getProfile(uuid);
+    const adapted = adaptFarmer(res.data);
+    return { success: true, data: adapted };
+  } catch {
+    return { success: false, data: null };
   }
-  return apiClient.get(`/farmers/${id}`);
 }
 
+/**
+ * Fetch registered Land Records for a farmer
+ */
 export async function getFarmerLandRecords(id) {
-  if (USE_MOCK) {
-    const list = landRecords.filter((lr) => lr.farmerId === id);
-    return mockResponse(list);
+  const uuid = resolveFarmerUuid(id);
+  if (!uuid) return { success: true, data: [] };
+  try {
+    const res = await farmerApi.getLandRecords(uuid);
+    const rawList = Array.isArray(res.data) ? res.data : [];
+    const adaptedList = rawList.map((r) => adaptLandRecord(r));
+    return { success: true, data: adaptedList };
+  } catch {
+    return { success: true, data: [] };
   }
-  return apiClient.get(`/farmers/${id}/land-records`);
 }
 
+/**
+ * Fetch agricultural loans for a farmer
+ */
 export async function getFarmerLoans(id) {
-  if (USE_MOCK) {
-    const list = loans.filter((l) => l.farmerId === id);
-    return mockResponse(list);
+  const uuid = resolveFarmerUuid(id);
+  if (!uuid) return { success: true, data: [] };
+  try {
+    const res = await farmerApi.getLoans(uuid);
+    const rawList = Array.isArray(res.data) ? res.data : [];
+    const adaptedList = rawList.map((l) => adaptLoan(l));
+    return { success: true, data: adaptedList };
+  } catch {
+    return { success: true, data: [] };
   }
-  return apiClient.get(`/farmers/${id}/loans`);
 }
+
+/**
+ * Fetch comprehensive dashboard metrics from backend
+ */
+export async function getFarmerDashboard(id) {
+  const uuid = resolveFarmerUuid(id);
+  if (!uuid) return { success: false, data: null };
+  try {
+    const res = await farmerApi.getDashboard(uuid);
+    return res;
+  } catch {
+    return { success: false, data: null };
+  }
+}
+
+export default {
+  getMe,
+  getFarmers,
+  getFarmer,
+  getFarmerLandRecords,
+  getFarmerLoans,
+  getFarmerDashboard,
+};

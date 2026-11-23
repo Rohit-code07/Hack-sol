@@ -22,6 +22,8 @@ import {
 import useAuth from '../../hooks/useAuth';
 import useDiscrepancies from '../../hooks/useDiscrepancies';
 import { formatDate } from '../../utils/formatters';
+import Modal from '../../components/common/Modal';
+import aiApi from '../../api/aiApi';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import PageHeader from '../../components/common/PageHeader';
 import Stamp from '../../components/common/Stamp';
@@ -40,8 +42,48 @@ export default function DiscrepanciesPage() {
   const { farmerId } = useAuth();
   useDocumentTitle('discrepancies.title', 'Discrepancy Alerts');
 
-  const { discrepancies, loading, error, retry } = useDiscrepancies(farmerId || 'FRM-0003');
+  const { discrepancies, loading, error, retry } = useDiscrepancies(farmerId);
   const [speakingId, setSpeakingId] = useState(null);
+  const [selectedDiscrepancy, setSelectedDiscrepancy] = useState(null);
+  const [aiExplanation, setAiExplanation] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+
+  const handleOpenAiExplain = async (item) => {
+    setSelectedDiscrepancy(item);
+    setIsAiModalOpen(true);
+    setAiLoading(true);
+    setAiExplanation(null);
+
+    try {
+      const res = await aiApi.explainDiscrepancy({
+        category: item.category || item.ruleCode || 'AGRICULTURAL_DISCREPANCY',
+        expectedAmount: item.expectedAmount,
+        actualAmount: item.actualAmount || item.amountPaid,
+        differenceAmount: item.discrepancyAmount,
+        status: item.severity || 'POTENTIAL_DISCREPANCY',
+        reason: item.description,
+        language: isEn ? 'en' : 'hi'
+      });
+      if (res?.data) {
+        setAiExplanation(res.data);
+      }
+    } catch {
+      setAiExplanation({
+        explanation: isEn 
+          ? 'Unable to connect to AI explanation service. Please visit your local bank branch with your passbook and 7/12 land records.'
+          : 'एआई विश्लेषण सेवा वर्तमान में उपलब्ध नहीं है। कृपया अपनी बैंक पासबुक तथा भूलेख प्रति लेकर संबंधित शाखा से संपर्क करें।',
+        recommendedAction: isEn 
+          ? 'Verify passbook entries at your branch.' 
+          : 'अपनी बैंक शाखा में पासबुक प्रविष्टियों का सत्यापन कराएं।',
+        documentsToVerify: isEn 
+          ? ['Updated Bank Passbook', 'Land Record (7/12 extract)', 'KCC Card Copy']
+          : ['अद्यतन बैंक पासबुक', 'भूलेख (7/12 खसरा खतौनी)', 'केसीसी कार्ड प्रति']
+      });
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   const hasSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
@@ -208,19 +250,29 @@ export default function DiscrepanciesPage() {
             </div>
 
             {!item.resolved && (
-              <Link
-                to={`/farmer/grievances?category=WRONG_LAND_RECORD&ref=${encodeURIComponent(
-                  item.ruleCode
-                )}&desc=${encodeURIComponent(content.description)}`}
-              >
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   variant="secondary"
                   size="sm"
-                  icon={<FileText className="w-4 h-4 text-clay-500" />}
+                  onClick={() => handleOpenAiExplain(item)}
+                  icon={<Sparkles className="w-4 h-4 text-saffron-500" />}
                 >
-                  {isEn ? 'File Resolution Grievance' : 'समाधान हेतु शिकायत दर्ज करें'}
+                  {isEn ? 'AI Analysis' : 'एआई विश्लेषण'}
                 </Button>
-              </Link>
+                <Link
+                  to={`/farmer/grievances?category=WRONG_LAND_RECORD&ref=${encodeURIComponent(
+                    item.ruleCode
+                  )}&desc=${encodeURIComponent(content.description)}`}
+                >
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    icon={<FileText className="w-4 h-4 text-paper-50" />}
+                  >
+                    {isEn ? 'File Grievance' : 'शिकायत दर्ज करें'}
+                  </Button>
+                </Link>
+              </div>
             )}
           </div>
         </Panel>
@@ -616,6 +668,83 @@ export default function DiscrepanciesPage() {
           </div>
         </div>
       </div>
+
+      {/* AI Discrepancy Explanation Modal */}
+      <Modal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        title={isEn ? 'AI Discrepancy Analysis & Explanation' : 'एआई विसंगति विश्लेषण व मार्गदर्शन'}
+      >
+        {aiLoading ? (
+          <div className="py-8 flex flex-col items-center justify-center space-y-3 text-clay-700">
+            <Sparkles className="w-8 h-8 text-saffron-500 animate-spin" />
+            <p className="text-xs font-serif font-bold">
+              {isEn ? 'Analyzing official entitlement calculation records...' : 'सत्यापित गणना अभिलेखों का एआई विश्लेषण जारी है...'}
+            </p>
+          </div>
+        ) : aiExplanation ? (
+          <div className="space-y-4 text-xs">
+            <div className="p-3 bg-paper-100 border border-indigo-900 rounded-xs space-y-1">
+              <span className="text-[10px] uppercase font-bold text-clay-600 block">
+                {isEn ? 'Rule / Scheme Reference' : 'नियम व योजना संदर्भ'}
+              </span>
+              <div className="font-bold text-indigo-950 font-serif text-sm">
+                {selectedDiscrepancy?.ruleCode || selectedDiscrepancy?.category || 'KCC / MSP Entitlement'}
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-bold uppercase text-clay-700 block">
+                {isEn ? 'Plain-Language Explanation:' : 'सरल भाषा में व्याख्या:'}
+              </span>
+              <p className="text-ink-muted leading-relaxed p-3 bg-paper-50 border border-paper-200 rounded-xs">
+                {aiExplanation.explanation || aiExplanation.responseText}
+              </p>
+            </div>
+
+            {aiExplanation.recommendedAction && (
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-bold uppercase text-sage-800 block">
+                  {isEn ? 'Recommended Next Steps:' : 'अनुशंसित आगामी कदम:'}
+                </span>
+                <p className="p-2.5 bg-sage-50 border border-sage-300 text-sage-900 rounded-xs">
+                  {aiExplanation.recommendedAction}
+                </p>
+              </div>
+            )}
+
+            {Array.isArray(aiExplanation.documentsToVerify) && aiExplanation.documentsToVerify.length > 0 && (
+              <div className="space-y-1.5">
+                <span className="text-[11px] font-bold uppercase text-clay-700 block">
+                  {isEn ? 'Documents to Verify & Bring:' : 'जांचने योग्य आवश्यक दस्तावेज:'}
+                </span>
+                <ul className="list-disc list-inside p-2.5 bg-paper-50 border border-paper-200 rounded-xs space-y-1 text-ink-muted">
+                  {aiExplanation.documentsToVerify.map((doc, idx) => (
+                    <li key={idx}>{doc}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="pt-3 border-t border-paper-200 flex justify-end gap-2.5">
+              <Button variant="secondary" onClick={() => setIsAiModalOpen(false)}>
+                {isEn ? 'Close' : 'बंद करें'}
+              </Button>
+              {selectedDiscrepancy && (
+                <Link
+                  to={`/farmer/grievances?category=WRONG_LAND_RECORD&ref=${encodeURIComponent(
+                    selectedDiscrepancy.ruleCode || ''
+                  )}&desc=${encodeURIComponent(aiExplanation.explanation || '')}`}
+                >
+                  <Button variant="primary" icon={<FileText className="w-4 h-4 text-paper-50" />}>
+                    {isEn ? 'Proceed to Grievance' : 'शिकायत दर्ज करें'}
+                  </Button>
+                </Link>
+              )}
+            </div>
+          </div>
+        ) : null}
+      </Modal>
     </div>
   );
 }

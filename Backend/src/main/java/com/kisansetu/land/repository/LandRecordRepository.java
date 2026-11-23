@@ -21,11 +21,11 @@ public interface LandRecordRepository extends JpaRepository<LandRecord, Long> {
     List<LandRecord> findByDistrictAndTehsilAndVillage(String district, String tehsil, String village);
 
     @Query("SELECT lr FROM LandRecord lr " +
-           "WHERE (:state IS NULL OR LOWER(lr.state) = LOWER(:state)) " +
-           "AND (:district IS NULL OR LOWER(lr.district) = LOWER(:district)) " +
-           "AND (:tehsil IS NULL OR LOWER(lr.tehsil) = LOWER(:tehsil)) " +
-           "AND (:village IS NULL OR LOWER(lr.village) = LOWER(:village)) " +
-           "AND (:khasraNumber IS NULL OR lr.khasraNumber = :khasraNumber)")
+           "WHERE (cast(:state as string) IS NULL OR LOWER(lr.state) = LOWER(cast(:state as string))) " +
+           "AND (cast(:district as string) IS NULL OR LOWER(lr.district) = LOWER(cast(:district as string))) " +
+           "AND (cast(:tehsil as string) IS NULL OR LOWER(lr.tehsil) = LOWER(cast(:tehsil as string))) " +
+           "AND (cast(:village as string) IS NULL OR LOWER(lr.village) = LOWER(cast(:village as string))) " +
+           "AND (cast(:khasraNumber as string) IS NULL OR lr.khasraNumber = cast(:khasraNumber as string))")
     List<LandRecord> searchParcels(
             @Param("state") String state,
             @Param("district") String district,

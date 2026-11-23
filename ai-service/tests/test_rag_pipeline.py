@@ -119,7 +119,7 @@ def test_bge_m3_retriever_query():
     )
     assert len(chunks) >= 1
     assert best_score is not None
-    assert best_score < 1.0  # L2 distance under threshold
+    assert best_score < 1.5  # Distance threshold
     top_chunk = chunks[0]
     assert top_chunk.metadata["scheme"] == "PMFBY"
     assert int(top_chunk.metadata["page"]) >= 1

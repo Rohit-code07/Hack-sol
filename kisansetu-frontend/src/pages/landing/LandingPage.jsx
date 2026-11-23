@@ -29,7 +29,6 @@ import CountUp from '../../components/motion/CountUp';
 import Reveal from '../../components/motion/Reveal';
 import useGsap from '../../hooks/useGsap';
 import useReducedMotion from '../../hooks/useReducedMotion';
-import { farmers, grievances } from '../../constants/mockData';
 import { formatCurrency } from '../../utils/formatters';
 
 import emblemSvg from '../../assets/emblem.svg';
@@ -84,9 +83,9 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const totalFarmersCount = farmers.length || 10;
-  const totalGrievancesCount = grievances?.length || 4;
-  const mockEntitlementGap = 142000;
+  const totalFarmersCount = 31;
+  const totalGrievancesCount = 7;
+  const totalEntitlementGap = 64500;
 
   // Title words for mask reveal animation
   const heroTitle = t('landing.heroTitle1', 'हर किसान का अधिकार, अब सीधा और पारदर्शी');
@@ -1090,7 +1089,7 @@ export default function LandingPage() {
             <div className="p-3 bg-paper-50 border-2 border-indigo-900 rounded-sm shadow-hard-sm">
               <span className="text-3xl sm:text-4xl font-bold font-serif text-indigo-900 block tabular-nums">
                 <CountUp
-                  value={mockEntitlementGap}
+                  value={totalEntitlementGap}
                   format={(val) => formatCurrency(val, i18n.language)}
                 />
               </span>

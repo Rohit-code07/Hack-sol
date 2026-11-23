@@ -17,7 +17,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class InsuranceReconciliationRequest {
 
-    @NotNull(message = "Farmer ID is required")
     private UUID farmerId;
 
     @NotBlank(message = "Insurance policy number is required")

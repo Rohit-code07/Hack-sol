@@ -29,7 +29,16 @@ public class LandController {
     @Operation(summary = "Register Land Record Parcel")
     public ResponseEntity<ApiResponse<LandRecordResponse>> create(@Valid @RequestBody LandRecordRequest request) {
         LandRecordResponse response = landService.createLandRecord(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response, "Land record created successfully"));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response, "Land record created and verified against Demo Registry"));
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Update Land Record Parcel")
+    public ResponseEntity<ApiResponse<LandRecordResponse>> update(
+            @PathVariable Long id,
+            @Valid @RequestBody LandRecordRequest request) {
+        LandRecordResponse response = landService.updateLandRecord(id, request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Land record updated successfully"));
     }
 
     @GetMapping("/{id}")
@@ -56,20 +65,6 @@ public class LandController {
     @Operation(summary = "Get All Land Parcels for a Farmer")
     public ResponseEntity<ApiResponse<List<LandRecordResponse>>> getByFarmer(@PathVariable UUID farmerId) {
         List<LandRecordResponse> responses = landService.getByFarmer(farmerId);
-        return ResponseEntity.ok(ApiResponse.success(responses));
-    }
-
-    @GetMapping("/{id}/ownership")
-    @Operation(summary = "Get Ownership Information for a Parcel")
-    public ResponseEntity<ApiResponse<List<LandOwnershipResponse>>> getOwnership(@PathVariable Long id) {
-        List<LandOwnershipResponse> responses = landService.getOwnership(id);
-        return ResponseEntity.ok(ApiResponse.success(responses));
-    }
-
-    @GetMapping("/{id}/mortgage")
-    @Operation(summary = "Get Mortgage Encumbrances for a Parcel")
-    public ResponseEntity<ApiResponse<List<MortgageResponse>>> getMortgages(@PathVariable Long id) {
-        List<MortgageResponse> responses = landService.getMortgages(id);
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 }

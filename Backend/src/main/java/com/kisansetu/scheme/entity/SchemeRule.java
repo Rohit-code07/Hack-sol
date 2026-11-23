@@ -48,7 +48,7 @@ public class SchemeRule {
     private String ruleVersion;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "rule_data", nullable = false, columnDefinition = "jsonb")
+    @Column(name = "rule_data", nullable = false)
     private String ruleData;
 
     @Column(name = "source_url", length = 255)

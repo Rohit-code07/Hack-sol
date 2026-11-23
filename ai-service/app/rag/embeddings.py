@@ -40,8 +40,8 @@ class BGEM3Embeddings(Embeddings):
     @classmethod
     def get_model(cls, model_name: str = settings.BGE_M3_MODEL, device: str = settings.EMBEDDING_DEVICE):
         """
-        Thread-safe lazy initialization of the BGE-M3 model.
-        Prioritizes official FlagEmbedding, falling back to SentenceTransformers.
+        Thread-safe lazy initialization of the embedding model.
+        Prioritizes official FlagEmbedding, falling back to SentenceTransformers and local cached models.
         """
         if cls._model is not None:
             return cls._model, cls._model_type
@@ -50,42 +50,71 @@ class BGEM3Embeddings(Embeddings):
             if cls._model is not None:
                 return cls._model, cls._model_type
 
-            logger.info("Initializing BGE-M3 embedding model: %s on device: %s", model_name, device)
+            logger.info("Initializing embedding model: %s on device: %s", model_name, device)
 
-            # Strategy 1: Official FlagEmbedding BGEM3FlagModel
-            try:
-                from FlagEmbedding import BGEM3FlagModel
-                logger.info("Loading BGE-M3 via FlagEmbedding.BGEM3FlagModel...")
-                cls._model = BGEM3FlagModel(
-                    model_name_or_path=model_name,
-                    use_fp16=False,
-                    device=device
-                )
-                cls._model_type = "flag_embedding"
-                logger.info("BGE-M3 model loaded successfully via FlagEmbedding.")
-                return cls._model, cls._model_type
-            except Exception as e:
-                logger.warning("FlagEmbedding loader failed: %s. Attempting SentenceTransformer fallback...", e)
+            # Strategy 1: Official FlagEmbedding BGEM3FlagModel (if BGE-M3 model requested and fully cached)
+            if "bge-m3" in model_name.lower():
+                from pathlib import Path
+                cache_dir = Path.home() / ".cache" / "huggingface" / "hub" / "models--BAAI--bge-m3"
+                has_weights = any(cache_dir.glob("**/model.safetensors")) if cache_dir.exists() else False
+                if has_weights:
+                    try:
+                        from FlagEmbedding import BGEM3FlagModel
+                        logger.info("Loading BGE-M3 via FlagEmbedding.BGEM3FlagModel...")
+                        cls._model = BGEM3FlagModel(
+                            model_name_or_path=model_name,
+                            use_fp16=False,
+                            device=device
+                        )
+                        cls._model_type = "flag_embedding"
+                        logger.info("BGE-M3 model loaded successfully via FlagEmbedding.")
+                        return cls._model, cls._model_type
+                    except Exception as e:
+                        logger.warning("FlagEmbedding loader failed: %s. Attempting SentenceTransformer...", e)
+                else:
+                    logger.info("BGE-M3 weights not fully present in local cache. Using cached SentenceTransformer model.")
 
-            # Strategy 2: SentenceTransformer BGE-M3 loader
-            try:
-                from sentence_transformers import SentenceTransformer
-                logger.info("Loading BGE-M3 via SentenceTransformer...")
-                cls._model = SentenceTransformer(model_name, device=device)
-                cls._model_type = "sentence_transformer"
-                logger.info("BGE-M3 model loaded successfully via SentenceTransformer.")
-                return cls._model, cls._model_type
-            except Exception as e:
-                logger.error("Failed to load BGE-M3 model via all loaders: %s", e)
-                raise RuntimeError(
-                    f"Unable to load mandatory embedding model '{model_name}'. "
-                    f"Ensure internet connectivity for initial weight download or pre-cache weights. Error: {e}"
-                ) from e
+            # Strategy 2: SentenceTransformer loader with candidates (trying local cache first)
+            from sentence_transformers import SentenceTransformer
+            candidates = [
+                "sentence-transformers/all-mpnet-base-v2",
+                model_name,
+                "sentence-transformers/all-MiniLM-L6-v2"
+            ]
+            for candidate in candidates:
+                try:
+                    cls._model = SentenceTransformer(candidate, device=device, local_files_only=True)
+                    cls._model_type = "sentence_transformer"
+                    cls._active_model_name = candidate
+                    logger.info("Embedding model '%s' loaded successfully via SentenceTransformer (local cache).", candidate)
+                    return cls._model, cls._model_type
+                except Exception:
+                    pass
+                try:
+                    logger.info("Attempting to load embedding model via SentenceTransformer: %s", candidate)
+                    cls._model = SentenceTransformer(candidate, device=device)
+                    cls._model_type = "sentence_transformer"
+                    cls._active_model_name = candidate
+                    logger.info("Embedding model '%s' loaded successfully via SentenceTransformer.", candidate)
+                    return cls._model, cls._model_type
+                except Exception as e:
+                    logger.warning("Failed to load candidate '%s': %s", candidate, e)
+
+            raise RuntimeError(
+                f"Unable to load any candidate embedding models ({candidates}). Ensure weights are available."
+            )
+
+    @classmethod
+    def get_dimension(cls) -> int:
+        """Returns the embedding vector dimension of the active model."""
+        model, mtype = cls.get_model()
+        if hasattr(model, "get_sentence_embedding_dimension"):
+            return int(model.get_sentence_embedding_dimension())
+        return 768
 
     def embed_documents(self, texts: List[str]) -> List[List[float]]:
         """
         Generates dense embeddings for a list of document chunks.
-        Returns a list of 1024-dimensional float lists.
         """
         if not texts:
             return []
@@ -93,7 +122,6 @@ class BGEM3Embeddings(Embeddings):
         model, mtype = self.get_model(self.model_name, self.device)
 
         if mtype == "flag_embedding":
-            # BGEM3FlagModel returns a dict containing 'dense_vecs'
             output = model.encode(
                 texts,
                 batch_size=12,
@@ -121,11 +149,9 @@ class BGEM3Embeddings(Embeddings):
     def embed_query(self, text: str) -> List[float]:
         """
         Generates a dense embedding for a single user search query.
-        Returns a single 1024-dimensional float list.
         """
         if not text or not text.strip():
-            # Return a zero vector of dimension 1024 if query is empty
-            return [0.0] * 1024
+            return [0.0] * self.get_dimension()
 
         model, mtype = self.get_model(self.model_name, self.device)
 

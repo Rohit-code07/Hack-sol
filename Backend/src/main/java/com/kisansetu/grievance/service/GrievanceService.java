@@ -9,6 +9,8 @@ import com.kisansetu.farmer.entity.Farmer;
 import com.kisansetu.farmer.repository.FarmerRepository;
 import com.kisansetu.grievance.dto.GrievanceGenerateRequest;
 import com.kisansetu.grievance.dto.GrievanceResponse;
+import com.kisansetu.grievance.dto.GrievanceStatusUpdateRequest;
+import com.kisansetu.grievance.dto.GrievanceSubmitRequest;
 import com.kisansetu.grievance.entity.Grievance;
 import com.kisansetu.grievance.repository.GrievanceRepository;
 import com.kisansetu.integration.ai.AIClientService;
@@ -18,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -36,6 +39,73 @@ public class GrievanceService {
     private final FarmerAccessValidator farmerAccessValidator;
 
     @Transactional
+    public GrievanceResponse submitGrievance(GrievanceSubmitRequest request) {
+        Farmer farmer = null;
+        if (request.getFarmerId() != null) {
+            farmer = farmerRepository.findById(request.getFarmerId()).orElse(null);
+        }
+        if (farmer == null) {
+            String currentUsername = com.kisansetu.common.util.SecurityUtils.getCurrentUsername();
+            if (currentUsername != null) {
+                farmer = farmerRepository.findByUserUsername(currentUsername).orElse(null);
+            }
+        }
+        if (farmer == null) {
+            throw new ResourceNotFoundException("Farmer", "id", request.getFarmerId());
+        }
+        farmerAccessValidator.validateAccess(farmer.getId());
+
+        Discrepancy discrepancy = null;
+        if (request.getDiscrepancyId() != null) {
+            discrepancy = discrepancyRepository.findById(request.getDiscrepancyId()).orElse(null);
+        }
+
+        Grievance grievance = Grievance.builder()
+                .farmer(farmer)
+                .discrepancy(discrepancy)
+                .grievanceCategory(request.getGrievanceCategory() != null ? request.getGrievanceCategory() : "GENERAL")
+                .department(request.getDepartment() != null ? request.getDepartment() : "Agriculture & Farmers Welfare")
+                .bankName(request.getBankName())
+                .branchName(request.getBranchName())
+                .relatedRecordReference(request.getRelatedRecordReference())
+                .subject(request.getSubject())
+                .grievanceContent(request.getGrievanceContent())
+                .expectedResolution(request.getExpectedResolution())
+                .amountInvolved(request.getAmountInvolved() != null ? request.getAmountInvolved() : BigDecimal.ZERO)
+                .dateOfIncident(request.getDateOfIncident())
+                .transactionId(request.getTransactionId())
+                .priority(request.getPriority() != null ? request.getPriority() : "MEDIUM")
+                .language(request.getLanguage() != null ? request.getLanguage() : "en")
+                .evidenceChecklist(request.getEvidenceChecklist())
+                .grievanceStatus(GrievanceStatus.SUBMITTED)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        grievance = grievanceRepository.save(grievance);
+        return mapToResponse(grievance);
+    }
+
+    @Transactional
+    public GrievanceResponse updateGrievanceStatus(Long id, GrievanceStatusUpdateRequest request) {
+        Grievance grievance = grievanceRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Grievance", "id", id));
+
+        grievance.setGrievanceStatus(request.getStatus());
+        if (request.getOfficerRemarks() != null) {
+            grievance.setOfficerRemarks(request.getOfficerRemarks());
+        }
+        if (request.getResolutionDetails() != null) {
+            grievance.setResolutionDetails(request.getResolutionDetails());
+        }
+        if (request.getStatus() == GrievanceStatus.RESOLVED) {
+            grievance.setResolvedAt(LocalDateTime.now());
+        }
+
+        grievance = grievanceRepository.save(grievance);
+        return mapToResponse(grievance);
+    }
+
+    @Transactional
     public GrievanceResponse generateGrievance(GrievanceGenerateRequest request) {
         farmerAccessValidator.validateAccess(request.getFarmerId());
         Farmer farmer = farmerRepository.findById(request.getFarmerId())
@@ -48,10 +118,8 @@ public class GrievanceService {
         String subject = buildSubject(discrepancy, lang);
         String checklist = buildChecklist(discrepancy, lang);
 
-        // Deterministic template as reliable base/fallback
         String grievanceBody = buildDeterministicTemplate(farmer, discrepancy, lang, request.getAdditionalNotes());
 
-        // Attempt Python AI enhancement for linguistic nuance if available, while strictly preserving financial figures
         try {
             GrievanceAIRequest aiReq = GrievanceAIRequest.builder()
                     .farmerId(farmer.getId())
@@ -70,7 +138,6 @@ public class GrievanceService {
             Optional<AIResponse> aiResponse = aiClientService.generateAIGrievance(aiReq);
             if (aiResponse.isPresent() && aiResponse.get().isSuccess() && aiResponse.get().getResponseText() != null
                     && !aiResponse.get().getResponseText().isBlank()) {
-                // Ensure calculated difference amount is strictly mentioned in AI text
                 String aiText = aiResponse.get().getResponseText();
                 if (discrepancy.getDifferenceAmount() != null) {
                     grievanceBody = aiText + "\n\n[Verified Audit Note: Statutory Shortfall Amount Recorded = INR "
@@ -80,16 +147,17 @@ public class GrievanceService {
                 }
             }
         } catch (Exception ignored) {
-            // Keep deterministic template
         }
 
         Grievance grievance = Grievance.builder()
                 .farmer(farmer)
                 .discrepancy(discrepancy)
+                .grievanceCategory(discrepancy.getCategory().name())
                 .subject(subject)
                 .grievanceContent(grievanceBody)
                 .language(lang)
                 .evidenceChecklist(checklist)
+                .amountInvolved(discrepancy.getDifferenceAmount() != null ? discrepancy.getDifferenceAmount() : BigDecimal.ZERO)
                 .grievanceStatus(GrievanceStatus.SUBMITTED)
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -115,6 +183,13 @@ public class GrievanceService {
     }
 
     @Transactional(readOnly = true)
+    public List<GrievanceResponse> getAllGrievances() {
+        return grievanceRepository.findAll().stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
     public byte[] getGrievancePdf(Long id) {
         Grievance g = grievanceRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Grievance", "id", id));
@@ -122,43 +197,45 @@ public class GrievanceService {
         return pdfService.generateGrievancePdf(g);
     }
 
-    private String buildSubject(Discrepancy discrepancy, String lang) {
-        if ("hi".equals(lang)) {
-            return String.format("योजना भुगतान विसंगति सुधार हेतु आवेदन - संदर्भ संख्या: %s", discrepancy.getReferenceId());
+    private String buildSubject(Discrepancy d, String lang) {
+        if ("hi".equalsIgnoreCase(lang)) {
+            return String.format("शिकायत: %s के तहत वित्तीय विसंगति (संदर्भ: %s)",
+                    d.getCategory(), d.getReferenceId());
         }
-        return String.format("Representation for Rectification of Entitlement Discrepancy - Ref: %s", discrepancy.getReferenceId());
+        return String.format("Formal Grievance: Financial Discrepancy under %s (Ref: %s)",
+                d.getCategory(), d.getReferenceId());
     }
 
-    private String buildChecklist(Discrepancy discrepancy, String lang) {
-        if ("hi".equals(lang)) {
-            return "1. आधार कार्ड की छायाप्रति\n" +
-                   "2. बैंक पासबुक / खाता विवरण\n" +
-                   "3. उपार्जन पर्ची / ऋण स्वीकृति पत्र (संदर्भ: " + discrepancy.getReferenceId() + ")\n" +
-                   "4. किसान सेतु मंच द्वारा सत्यापित गणना विवरणी";
+    private String buildChecklist(Discrepancy d, String lang) {
+        if ("hi".equalsIgnoreCase(lang)) {
+            return "1. आधार कार्ड की स्वप्रमाणित प्रति\n" +
+                   "2. बैंक पासबुक / खाते का विवरण\n" +
+                   "3. संबंधित योजना का स्वीकृति पत्र अथवा रसीद (संदर्भ: " + d.getReferenceId() + ")\n" +
+                   "4. राजस्व भू-अभिलेख खतौनी (यदि भूमि से संबंधित हो)";
         }
-        return "1. Copy of Aadhaar Card\n" +
-               "2. Bank Passbook / Account Statement\n" +
-               "3. Procurement Slip / Loan Sanction Letter (Ref: " + discrepancy.getReferenceId() + ")\n" +
-               "4. Verified Entitlement Audit Summary from KisanSetu Platform";
+        return "1. Self-attested copy of Aadhaar Card\n" +
+               "2. Bank Passbook / Detailed Account Statement\n" +
+               "3. Relevant Scheme Sanction Order or Payment Receipt (Ref: " + d.getReferenceId() + ")\n" +
+               "4. Revenue Land Record Copy (7/12 or RoR if applicable)";
     }
 
     private String buildDeterministicTemplate(Farmer farmer, Discrepancy discrepancy, String lang, String notes) {
-        if ("hi".equals(lang)) {
+        if ("hi".equalsIgnoreCase(lang)) {
             return String.format(
                     "सेवा में,\n" +
-                    "सक्षम अधिकारी महोदय,\n\n" +
+                    "सक्षम प्राधिकारी महोदय,\n\n" +
                     "विषय: %s\n\n" +
                     "महोदय,\n" +
-                    "मैं %s, ग्राम %s, तहसील %s, जिला %s (%s) का निवासी कृषक हूँ।\n\n" +
-                    "मेरे खाते में योजना अंतर्गत देय राशि में वित्तीय विसंगति पाई गई है:\n" +
+                    "मैं %s, ग्राम %s, तहसील %s, जिला %s (%s) का निवासी हूँ। मैं निम्नलिखित योजना में हुए वित्तीय अंतर के समाधान हेतु यह आवेदन प्रस्तुत कर रहा हूँ:\n\n" +
+                    "विसंगति का विवरण:\n" +
                     "- श्रेणी: %s\n" +
-                    "- देय/स्वीकृत राशि: INR %s\n" +
-                    "- वास्तव में प्राप्त राशि: INR %s\n" +
-                    "- बकाया अंतर राशि: INR %s\n\n" +
-                    "विवरण: %s\n" +
-                    (notes != null && !notes.isBlank() ? "अतिरिक्त टिप्पणी: " + notes + "\n" : "") +
-                    "\nअतः आपसे निवेदन है कि उक्त रिकॉर्ड की जांच कर बकाया अंतर राशि INR %s शीघ्र जारी करने की कृपा करें।\n\n" +
-                    "भवदीय,\n%s\nमो: %s",
+                    "- अपेक्षित कानूनी पात्रता: ₹ %s\n" +
+                    "- वास्तविक प्राप्त / जमा राशि: ₹ %s\n" +
+                    "- शुद्ध अंतर (शॉर्टफॉल): ₹ %s\n\n" +
+                    "निष्कर्ष: %s\n" +
+                    (notes != null && !notes.isBlank() ? "आवेदक की अतिरिक्त टिप्पणी: " + notes + "\n" : "") +
+                    "\nअतः आपसे विनम्र निवेदन है कि रिकॉर्ड का सत्यापन कर शेष देय राशि ₹ %s मेरे बैंक खाते में शीघ्र हस्तांतरित करने की कृपा करें।\n\n" +
+                    "भवदीय,\n%s\nमोबाइल: %s",
                     buildSubject(discrepancy, lang),
                     farmer.getFarmerName(), farmer.getVillage(), farmer.getTehsil(), farmer.getDistrict(), farmer.getState(),
                     discrepancy.getCategory(),
@@ -204,12 +281,25 @@ public class GrievanceService {
                 .farmerId(g.getFarmer().getId())
                 .farmerName(g.getFarmer().getFarmerName())
                 .discrepancyId(g.getDiscrepancy() != null ? g.getDiscrepancy().getId() : null)
+                .grievanceCategory(g.getGrievanceCategory() != null ? g.getGrievanceCategory() : "GENERAL")
+                .department(g.getDepartment())
+                .bankName(g.getBankName())
+                .branchName(g.getBranchName())
+                .relatedRecordReference(g.getRelatedRecordReference())
                 .subject(g.getSubject())
                 .grievanceContent(g.getGrievanceContent())
+                .expectedResolution(g.getExpectedResolution())
+                .amountInvolved(g.getAmountInvolved())
+                .dateOfIncident(g.getDateOfIncident())
+                .transactionId(g.getTransactionId())
+                .priority(g.getPriority() != null ? g.getPriority() : "MEDIUM")
                 .language(g.getLanguage())
                 .evidenceChecklist(g.getEvidenceChecklist())
                 .grievanceStatus(g.getGrievanceStatus())
-                .recordedDifferenceAmount(g.getDiscrepancy() != null ? g.getDiscrepancy().getDifferenceAmount() : null)
+                .officerRemarks(g.getOfficerRemarks())
+                .resolutionDetails(g.getResolutionDetails())
+                .resolvedAt(g.getResolvedAt())
+                .recordedDifferenceAmount(g.getDiscrepancy() != null ? g.getDiscrepancy().getDifferenceAmount() : g.getAmountInvolved())
                 .createdAt(g.getCreatedAt())
                 .build();
     }

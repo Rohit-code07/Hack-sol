@@ -28,8 +28,8 @@ class Settings(BaseSettings):
     CHROMA_PERSIST_DIRECTORY: str = str(BASE_DIR / "chroma_db")
     CHROMA_COLLECTION_NAME: str = "kisansetu_policy_bge_m3"
 
-    # Embedding Model (BAAI/bge-m3)
-    BGE_M3_MODEL: str = "BAAI/bge-m3"
+    # Embedding Model (BAAI/bge-m3 or local sentence-transformers)
+    BGE_M3_MODEL: str = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-mpnet-base-v2")
     EMBEDDING_DEVICE: str = "cpu"
     NORMALIZE_EMBEDDINGS: bool = True
 
@@ -43,10 +43,11 @@ class Settings(BaseSettings):
     DEFAULT_CHUNK_SIZE: int = 800
     DEFAULT_CHUNK_OVERLAP: int = 120
     MAX_UPLOAD_SIZE_MB: int = 30
-    ALLOWED_EXTENSIONS: List[str] = [".pdf"]
+    ALLOWED_EXTENSIONS: List[str] = [".pdf", ".txt"]
 
     # Documents directory
     DOCUMENTS_DIRECTORY: str = str(BASE_DIR / "documents")
+    DOCUMENT_STORAGE_DIRECTORY: str = str(BASE_DIR / "documents")
 
     model_config = SettingsConfigDict(
         env_file=str(BASE_DIR / ".env"),

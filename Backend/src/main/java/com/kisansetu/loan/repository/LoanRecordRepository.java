@@ -13,7 +13,8 @@ import java.util.UUID;
 @Repository
 public interface LoanRecordRepository extends JpaRepository<LoanRecord, Long> {
     Optional<LoanRecord> findByLoanAccountReference(String loanAccountReference);
-    List<LoanRecord> findByFarmerId(UUID farmerId);
+    @Query("SELECT lr FROM LoanRecord lr JOIN FETCH lr.farmer JOIN FETCH lr.bank WHERE lr.farmer.id = :farmerId")
+    List<LoanRecord> findByFarmerId(@Param("farmerId") UUID farmerId);
     List<LoanRecord> findByBankId(Long bankId);
 
     @Query("SELECT lr FROM LoanRecord lr WHERE lr.farmer.id = :farmerId AND lr.repaymentStatus = 'ACTIVE'")

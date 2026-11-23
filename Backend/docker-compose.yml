@@ -1,22 +1,28 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: kisansetu-postgres
+  mysql:
+    image: mysql:8.4
+    container_name: kisansetu-mysql
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: kisansetu
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: change_me
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-kisansetu}
+      MYSQL_USER: ${MYSQL_USER:-kisansetu}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-kisansetu123}
     ports:
-      - "5432:5432"
+      - "${MYSQL_PORT:-3306}:3306"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - kisansetu_mysql_data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-authentication-plugin=mysql_native_password
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d kisansetu"]
-      interval: 5s
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword123}"]
+      interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
 
 volumes:
-  postgres_data:
+  kisansetu_mysql_data:

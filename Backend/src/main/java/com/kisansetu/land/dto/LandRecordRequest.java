@@ -21,6 +21,9 @@ public class LandRecordRequest {
     @NotBlank(message = "Khasra number is required")
     private String khasraNumber;
 
+    private String khataNumber;
+    private String surveyNumber;
+
     @NotBlank(message = "Village is required")
     private String village;
 
@@ -40,10 +43,34 @@ public class LandRecordRequest {
     @Builder.Default
     private String areaUnit = "ACRE";
 
+    private String ownerName;
+    private String coOwnerDetails;
+    private String irrigationStatus;
+    private String landUsage;
+    private Boolean isMortgaged;
+    private Boolean isCollateral;
+
     @Builder.Default
     private OwnershipStatus ownershipStatus = OwnershipStatus.CLEAR;
 
-    // Optional initial farmer owner linkage
+    private String ownershipType;
+
+    // Optional initial farmer owner linkage (supports farmerId, ownerFarmerId)
     private UUID ownerFarmerId;
+    private UUID farmerId;
     private BigDecimal ownershipPercentage;
+
+    public UUID getOwnerFarmerId() {
+        if (ownerFarmerId != null) {
+            return ownerFarmerId;
+        }
+        return farmerId;
+    }
+
+    public void setFarmerId(UUID farmerId) {
+        this.farmerId = farmerId;
+        if (this.ownerFarmerId == null) {
+            this.ownerFarmerId = farmerId;
+        }
+    }
 }

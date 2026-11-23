@@ -10,6 +10,7 @@ import {
   Gift,
   Globe,
   LogOut,
+  Landmark,
   MoreHorizontal,
 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
@@ -24,7 +25,7 @@ const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffec
  */
 export default function TopNav() {
   const { t } = useTranslation();
-  const { farmerName, farmerId, logout } = useAuth();
+  const { logout } = useAuth();
   const { language, toggleLanguage } = useContext(LanguageContext);
   const navigate = useNavigate();
   const location = useLocation();
@@ -127,18 +128,6 @@ export default function TopNav() {
                   </span>
                 </div>
               </NavLink>
-
-              {/* Farmer Profile Identity Strip on Desktop */}
-              {farmerId && (
-                <div className="hidden sm:flex items-center gap-2 ml-3 pl-3 border-l border-paper-200">
-                  <span className="text-xs font-semibold text-indigo-900">
-                    {farmerName || 'Ramesh Kumar'}
-                  </span>
-                  <span className="text-xs font-mono bg-paper-100 border border-paper-200 px-2 py-0.5 rounded-sm text-ink-muted">
-                    {farmerId}
-                  </span>
-                </div>
-              )}
             </div>
 
             {/* Desktop Navigation Tabs with Sliding Underline (M1.3) */}
@@ -176,6 +165,15 @@ export default function TopNav() {
 
             {/* Language Toggle (M1.5) & Logout */}
             <div className="flex items-center gap-2">
+              <Link
+                to="/login?role=bank"
+                className="min-h-[44px] hidden sm:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider text-indigo-900 bg-paper-100 border border-indigo-900 rounded-sm hover:bg-paper-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-saffron-400"
+                title={language === 'hi' ? 'बैंक अधिकारी पोर्टल' : 'Bank Officer Portal'}
+              >
+                <Landmark className="w-3.5 h-3.5 text-indigo-900" />
+                <span>{language === 'hi' ? 'बैंक पोर्टल' : 'Bank Portal'}</span>
+              </Link>
+
               <button
                 type="button"
                 onClick={toggleLanguage}

@@ -20,11 +20,13 @@ import {
   ChevronRight,
   AlertCircle,
   CheckCircle2,
+  Sparkles,
 } from 'lucide-react';
+import aiApi from '../../api/aiApi';
 import useAuth from '../../hooks/useAuth';
 import useAsync from '../../hooks/useAsync';
 import useToast from '../../hooks/useToast';
-import { getGrievances, submitGrievance } from '../../services/grievanceService';
+import { getGrievances, submitGrievance, downloadGrievancePdf } from '../../services/grievanceService';
 import { formatDate } from '../../utils/formatters';
 import { GRIEVANCE_CATEGORIES } from '../../constants';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
@@ -55,6 +57,35 @@ export default function GrievanceHistoryPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submittedGrievance, setSubmittedGrievance] = useState(null);
   const [errorDesc, setErrorDesc] = useState('');
+  const [aiDrafting, setAiDrafting] = useState(false);
+  const [aiChecklist, setAiChecklist] = useState([]);
+
+  const handleAiDraft = async () => {
+    setAiDrafting(true);
+    try {
+      const res = await aiApi.generateGrievance({
+        farmerName: farmerName || 'Kisan',
+        category,
+        description: description.trim() || undefined,
+        language: isEn ? 'en' : 'hi',
+      });
+      if (res?.data) {
+        const bodyText = res.data.body || res.data.responseText;
+        if (bodyText) {
+          setDescription(bodyText);
+          setErrorDesc('');
+        }
+        if (Array.isArray(res.data.evidenceChecklist) && res.data.evidenceChecklist.length > 0) {
+          setAiChecklist(res.data.evidenceChecklist);
+        }
+        toast.success(isEn ? 'AI Grievance drafted! Review and edit before submitting.' : 'एआई द्वारा प्रारूप तैयार किया गया! कृपया जांचें और जमा करें।');
+      }
+    } catch {
+      toast.error(isEn ? 'AI drafting temporarily unavailable' : 'एआई सेवा से संपर्क नहीं हो सका');
+    } finally {
+      setAiDrafting(false);
+    }
+  };
 
   const fetchGrievances = useCallback(() => getGrievances(farmerId || 'FRM-0003'), [farmerId]);
   const { data: grievancesList, loading, error, retry } = useAsync(fetchGrievances, true, [farmerId]);
@@ -81,12 +112,14 @@ export default function GrievanceHistoryPage() {
     setSubmittedGrievance(null);
     setDescription('');
     setErrorDesc('');
+    setAiChecklist([]);
     setIsModalOpen(true);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSubmittedGrievance(null);
+    setAiChecklist([]);
   };
 
   const handleSubmit = async (e) => {
@@ -123,10 +156,21 @@ export default function GrievanceHistoryPage() {
     }
   };
 
-  const downloadPdfReceipt = (item) => {
-    const doc = new jsPDF();
+  const downloadPdfReceipt = async (item) => {
     const g = item || submittedGrievance;
     if (!g) return;
+
+    if (g.id && typeof g.id === 'number') {
+      try {
+        await downloadGrievancePdf(g.id, `KisanSetu-Grievance-${g.id}.pdf`);
+        toast.success(t('grievance.pdfDownloaded', 'PDF Receipt downloaded'));
+        return;
+      } catch (err) {
+        // Fall back to client generation if server stream has error
+      }
+    }
+
+    const doc = new jsPDF();
 
     // Header & Border
     doc.setDrawColor(30, 27, 75); // indigo-900
@@ -157,7 +201,7 @@ export default function GrievanceHistoryPage() {
 
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Applicant ID: ${g.farmerId} (${farmerName || 'Ramesh Kumar'})`, 18, 66);
+    doc.text(`Applicant ID: ${g.farmerId} (${farmerName || ''})`, 18, 66);
     doc.text(`Category: ${g.category.replace(/_/g, ' ')}`, 18, 74);
     doc.text(`Current Status: ${g.status}`, 18, 82);
     doc.text(`Filing Date: ${new Date(g.createdAt).toLocaleString('en-IN')}`, 18, 90);
@@ -385,10 +429,24 @@ export default function GrievanceHistoryPage() {
             />
 
             <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-bold font-serif text-indigo-950">
+                  {isEn ? 'Detailed Complaint Description *' : 'विस्तृत विवरण *'}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleAiDraft}
+                  disabled={aiDrafting}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-bold font-mono px-2 py-1 bg-saffron-100 hover:bg-saffron-200 text-indigo-950 border border-saffron-400 rounded-xs transition-colors shadow-hard-sm"
+                >
+                  <Sparkles className={`w-3.5 h-3.5 text-saffron-600 ${aiDrafting ? 'animate-spin' : ''}`} />
+                  <span>{aiDrafting ? (isEn ? 'AI Drafting...' : 'एआई प्रारूप तैयार हो रहा...') : (isEn ? 'Draft with AI' : 'एआई से ड्राफ्ट करें')}</span>
+                </button>
+              </div>
               <Field
                 id="grv-desc"
                 type="textarea"
-                label={isEn ? 'Detailed Complaint Description *' : 'विस्तृत विवरण *'}
+                label=""
                 required
                 value={description}
                 onChange={(e) => {
@@ -405,6 +463,20 @@ export default function GrievanceHistoryPage() {
                 hint={`${description.length} / 1000 (${isEn ? 'min 20 characters' : 'कम से कम 20 अक्षर आवश्यक'})`}
                 maxLength={1000}
               />
+
+              {aiChecklist.length > 0 && (
+                <div className="mt-2.5 p-2.5 bg-paper-100 border border-sage-400 rounded-xs text-xs space-y-1">
+                  <div className="flex items-center gap-1 text-[11px] font-bold text-sage-800">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-sage-600" />
+                    <span>{isEn ? 'Suggested Supporting Documents (AI Checklist):' : 'सुझाए गए आवश्यक साक्ष्य दस्तावेज:'}</span>
+                  </div>
+                  <ul className="list-disc list-inside text-[11px] text-ink-muted pl-1 space-y-0.5">
+                    {aiChecklist.map((item, idx) => (
+                      <li key={idx}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
 
             <div className="pt-3 border-t border-paper-200 flex justify-end gap-3">
@@ -736,7 +808,7 @@ export default function GrievanceHistoryPage() {
               doc.text('District: Wardha | Tehsil: Wardha | Maharashtra', 20, 30);
               doc.text('To: The Tahsildar / Talathi Officer', 20, 45);
               doc.text('Subject: Application for Correction in 7/12 Bhulekh & KCC Record', 20, 55);
-              doc.text('Farmer Name: Ramesh Kumar (FRM-0003)', 20, 70);
+              doc.text(`Farmer Name: ${farmerName || ''}`, 20, 70);
               doc.text('Survey Number: 102/1 | Area: 2.5 Hectares', 20, 80);
               doc.text('Nature of Discrepancy: Surname spelling omission in online portal', 20, 90);
               doc.text('Date of Filing: 15 Feb 2026', 20, 105);

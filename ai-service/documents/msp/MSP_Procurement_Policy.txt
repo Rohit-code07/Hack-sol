@@ -1,0 +1,46 @@
+GOVERNMENT OF INDIA - MINISTRY OF CONSUMER AFFAIRS, FOOD & PUBLIC DISTRIBUTION
+DEPARTMENT OF FOOD & PUBLIC DISTRIBUTION & COMMISSION FOR AGRICULTURAL COSTS AND PRICES (CACP)
+MINIMUM SUPPORT PRICE (MSP) AND MANDI PROCUREMENT POLICY GUIDELINES
+
+1. OBJECTIVES OF MINIMUM SUPPORT PRICE (MSP)
+(a) To ensure remunerative prices to growers for their produce with a view to encouraging higher investment and production.
+(b) To protect farmers from acute price volatility, distress sales during harvest gluts, and predatory trade practices.
+(c) To evolve a balanced and integrated price structure in the perspective of the overall agricultural economy.
+(d) Government policy fixes MSP at a level of at least 1.5 times the all-India weighted average cost of production (Cost A2 + FL).
+
+2. COMMODITIES COVERED UNDER MSP
+The Government fixes MSP for 23 mandated agricultural crops:
+(a) 7 Cereals: Paddy, Wheat, Barley, Jowar, Bajra, Maize, Ragi.
+(b) 5 Pulses: Gram (Chana), Arhar/Tur, Moong, Urad, Lentil (Masur).
+(c) 8 Oilseeds: Groundnut, Rapeseed/Mustard, Soyabean, Sesamum, Sunflower seed, Safflower, Nigerseed, Toria.
+(d) Commercial Crops: Copra, Sugarcane (Fair and Remunerative Price - FRP), Raw Cotton, Raw Jute.
+
+3. PROCUREMENT AGENCIES AND MANDI OPERATIONS
+(a) Procurement is undertaken by central designated agencies such as Food Corporation of India (FCI), NAFED, Cotton Corporation of India (CCI), along with State Civil Supplies Corporations and registered APMC Mandis.
+(b) Procurement centers are set up in major production belts and rural APMC yards.
+(c) Every registered farmer is entitled to bring FAQ-grade agricultural produce to procurement centers without quantity caps under Decentralized Procurement (DCP).
+
+4. FAIR AVERAGE QUALITY (FAQ) SPECIFICATIONS
+(a) Moisture Content Limit:
+    - Paddy (Common and Grade A): Maximum permissible moisture content is 17.0%.
+    - Wheat: Maximum permissible moisture content is 12.0%.
+    - Maize: Maximum moisture content is 14.0%.
+    - Soyabean: Maximum moisture content is 12.0%.
+(b) Produce exceeding the designated moisture threshold is subject to pro-rata value cuts or must be sun-dried prior to weighment.
+(c) Foreign Matter / Inorganics: Permissible limit of up to 1.0% to 2.0% maximum.
+(d) Damaged, weeviled, or discolored grains must not exceed 4.0% to 5.0%.
+
+5. MANDATORY PAYMENT TIMELINES AND DIRECT BENEFIT TRANSFER (DBT)
+(a) Statutory Payment Deadline: 100% payment for produce procured at MSP must be credited to the farmer's account within 48 to 72 hours of the issuance of the J-Form (Procurement / Mandi Slip).
+(b) Payment Mode: Direct Benefit Transfer (DBT) directly into the farmer's Aadhaar-seeded commercial bank or cooperative account via Public Financial Management System (PFMS).
+(c) Prohibition of Cash or Intermediary Payments: Mandi agents (Arhtiyas) and private traders are legally barred from deducting unauthorized commissions, brokerage, or transportation cuts from the statutory MSP amount.
+(d) The J-Form must explicitly record the net weight in quintals, moisture percentage, gross payable amount computed as (Net Weight × MSP Rate), and transaction timestamp.
+
+6. GRIEVANCE REDRESSAL AND APMC DESK
+(a) Non-payment, payment delay exceeding 72 hours, or illegal deductions below the declared MSP rate constitutes a statutory violation of State APMC Acts and National Food Security norms.
+(b) Farmers may submit formal grievances to the District Procurement Officer, District Collector, or the Mandi Secretary.
+(c) Required documentation for dispute resolution:
+    - Original J-Form / Weighment Slip issued by the APMC Mandi.
+    - Farmer Registration Certificate / Khasra-Girdawari record.
+    - Updated bank passbook showing credit shortfall or non-receipt.
+    - Copy of Aadhaar Card.
