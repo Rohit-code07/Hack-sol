@@ -1,0 +1,621 @@
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import {
+  ShieldCheck,
+  AlertOctagon,
+  FileText,
+  Calendar,
+  Volume2,
+  VolumeX,
+  CheckCircle2,
+  Clock,
+  Layers,
+  MapPin,
+  Building2,
+  HelpCircle,
+  ExternalLink,
+  ChevronRight,
+  PhoneCall,
+  Sparkles,
+} from 'lucide-react';
+import useAuth from '../../hooks/useAuth';
+import useDiscrepancies from '../../hooks/useDiscrepancies';
+import { formatDate } from '../../utils/formatters';
+import useDocumentTitle from '../../hooks/useDocumentTitle';
+import PageHeader from '../../components/common/PageHeader';
+import Stamp from '../../components/common/Stamp';
+import Panel from '../../components/common/Panel';
+import Button from '../../components/common/Button';
+import ErrorState from '../../components/common/ErrorState';
+import Skeleton from '../../components/common/Skeleton';
+import Reveal from '../../components/motion/Reveal';
+
+/**
+ * Discrepancy Alerts Page with scroll reveal, severity categorization, and TTS wave indicator.
+ */
+export default function DiscrepanciesPage() {
+  const { t, i18n } = useTranslation();
+  const isEn = i18n.language === 'en';
+  const { farmerId } = useAuth();
+  useDocumentTitle('discrepancies.title', 'Discrepancy Alerts');
+
+  const { discrepancies, loading, error, retry } = useDiscrepancies(farmerId || 'FRM-0003');
+  const [speakingId, setSpeakingId] = useState(null);
+
+  const hasSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window;
+
+  const handleSpeak = (item) => {
+    if (!hasSpeech) return;
+
+    if (speakingId === item.id) {
+      window.speechSynthesis.cancel();
+      setSpeakingId(null);
+      return;
+    }
+
+    window.speechSynthesis.cancel();
+    const textToSpeak = `${item.ruleCode}. ${item.description}. ${item.recommendedAction}`;
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    utterance.lang = i18n.language === 'hi' ? 'hi-IN' : 'en-IN';
+    utterance.rate = 0.9;
+
+    utterance.onstart = () => {
+      setSpeakingId(item.id);
+    };
+
+    utterance.onend = () => {
+      setSpeakingId(null);
+    };
+
+    utterance.onerror = () => {
+      setSpeakingId(null);
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
+  const highList = discrepancies.filter((d) => d.severity === 'HIGH');
+  const mediumList = discrepancies.filter((d) => d.severity === 'MEDIUM');
+  const lowList = discrepancies.filter((d) => d.severity === 'LOW');
+
+  if (error) {
+    return (
+      <ErrorState
+        title={t('errors.loadFailed', 'Unable to load discrepancy alerts')}
+        onRetry={retry}
+      />
+    );
+  }
+
+  const getDiscrepancyContent = (item) => {
+    if (isEn) {
+      return {
+        ruleName: item.ruleCode.replace(/_/g, ' '),
+        description: item.description,
+        recommendedAction: item.recommendedAction,
+      };
+    }
+    const hiLookup = {
+      OWNER_NAME_MISMATCH: {
+        ruleName: 'भूलेख व बैंक नाम में अंतर',
+        description: 'सर्वे 102/1 के राजस्व अभिलेख में दर्ज नाम \'रमेश दयाराम\' है जबकि बैंक खाते में \'रमेश कुमार\' दर्ज है।',
+        recommendedAction: 'भूलेख व आधार नाम मिलान हेतु राजस्व कार्यालय में शपथ पत्र या म्यूटेशन सुधार आवेदन प्रस्तुत करें।',
+      },
+      LOAN_NPA_WITH_SUBSIDY: {
+        ruleName: 'एनपीए खाता व ब्याज अनुदान रुकावट',
+        description: 'केसीसी ऋण खाता LN-2024-001 एनपीए घोषित है जबकि 4% केंद्र सरकार ब्याज अनुदान दावा लंबित है।',
+        recommendedAction: 'ब्याज अनुदान पात्रता पुनः प्राप्त करने हेतु बैंक शाखा में ₹95,000 की अतिदेय राशि नियमित करें।',
+      },
+      DUPLICATE_SURVEY: {
+        ruleName: 'दोहरा खसरा प्रविष्टि अलर्ट',
+        description: 'खसरा संख्या 74/2A दो अलग-अलग किसान प्रोफाइलों में दर्ज पाया गया है।',
+        recommendedAction: 'तहसीलदार कार्यालय में 7/12 खतौनी विभाजन सत्यापन हेतु मूल दस्तावेज प्रस्तुत करें।',
+      },
+      OVER_LIMIT_ACREAGE: {
+        ruleName: 'स्वीकृत रकबा से अधिक KCC सीमा',
+        description: 'कुल खेती योग्य भूमि 2.5 हेक्टेयर के मुकाबले KCC ऋण सीमा 4.0 हेक्टेयर मानक पर स्वीकृत है।',
+        recommendedAction: 'बैंक शाखा प्रबंधक से संपर्क कर वास्तविक सिंचित रकबे के अनुसार KCC सीमा संशोधित कराएं।',
+      },
+    };
+    return hiLookup[item.ruleCode] || {
+      ruleName: item.ruleCode.replace(/_/g, ' '),
+      description: item.descriptionHi || item.description,
+      recommendedAction: item.recommendedActionHi || item.recommendedAction,
+    };
+  };
+
+  const renderDiscrepancyCard = (item, accent) => {
+    const isSpeaking = speakingId === item.id;
+    const content = getDiscrepancyContent(item);
+
+    return (
+      <Reveal key={item.id}>
+        <Panel accent={accent} className="shadow-hard-sm space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-paper-200 pb-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-bold text-sm text-indigo-900 font-mono">
+                {content.ruleName}
+              </span>
+              <Stamp status={item.severity} />
+
+              {/* Sunein Audio Button with 4-Bar Wave Indicator */}
+              {hasSpeech ? (
+                <button
+                  type="button"
+                  onClick={() => handleSpeak(item)}
+                  aria-label={isSpeaking ? (isEn ? 'Stop listening' : 'सुनना बंद करें') : (isEn ? 'Listen to alert' : 'अलर्ट सुनें')}
+                  className="min-h-[44px] px-2.5 py-1 inline-flex items-center gap-1.5 text-ink-muted hover:text-indigo-900 bg-paper-100 hover:bg-paper-200 border border-paper-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-saffron-400 rounded-sm text-xs font-semibold"
+                >
+                  {isSpeaking ? (
+                    <>
+                      <div className="flex items-center gap-0.5 h-3.5 px-0.5" aria-hidden="true">
+                        <span className="w-0.5 bg-clay-500 rounded-full h-full animate-wave" style={{ animationDelay: '0s' }} />
+                        <span className="w-0.5 bg-clay-500 rounded-full h-full animate-wave" style={{ animationDelay: '0.15s' }} />
+                        <span className="w-0.5 bg-clay-500 rounded-full h-full animate-wave" style={{ animationDelay: '0.3s' }} />
+                        <span className="w-0.5 bg-clay-500 rounded-full h-full animate-wave" style={{ animationDelay: '0.45s' }} />
+                      </div>
+                      <span className="text-clay-500 font-bold">{isEn ? 'Listening...' : 'सुन रहे हैं...'}</span>
+                      <VolumeX className="w-3.5 h-3.5 text-rust-600 ml-0.5" />
+                    </>
+                  ) : (
+                    <>
+                      <Volume2 className="w-3.5 h-3.5 text-clay-500" />
+                      <span>{isEn ? 'Listen' : 'सुनें'}</span>
+                    </>
+                  )}
+                </button>
+              ) : null}
+            </div>
+
+            <div className="flex items-center gap-2 text-xs text-ink-muted">
+              <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>
+                {isEn ? 'Detected' : 'पहचाना गया'}: {formatDate(item.detectedAt, i18n.language)}
+              </span>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-medium text-indigo-900 leading-relaxed">
+              {content.description}
+            </p>
+          </div>
+
+          {/* Collapsible Action & Context Details */}
+          <div className="bg-paper-100 p-3.5 rounded-sm border border-paper-200 text-xs space-y-1.5">
+            <span className="font-bold uppercase tracking-wider text-clay-500 block">
+              {isEn ? 'Recommended Action' : 'सुझाया गया निवारण'}:
+            </span>
+            <p className="text-indigo-900 leading-relaxed">{content.recommendedAction}</p>
+          </div>
+
+          <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div>
+              {item.resolved ? (
+                <Stamp status="RESOLVED" label={isEn ? 'Resolved' : 'समाधान हो चुका'} />
+              ) : (
+                <Stamp status="PENDING" label={isEn ? 'Action Required' : 'कार्रवाई आवश्यक'} />
+              )}
+            </div>
+
+            {!item.resolved && (
+              <Link
+                to={`/farmer/grievances?category=WRONG_LAND_RECORD&ref=${encodeURIComponent(
+                  item.ruleCode
+                )}&desc=${encodeURIComponent(content.description)}`}
+              >
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<FileText className="w-4 h-4 text-clay-500" />}
+                >
+                  {isEn ? 'File Resolution Grievance' : 'समाधान हेतु शिकायत दर्ज करें'}
+                </Button>
+              </Link>
+            )}
+          </div>
+        </Panel>
+      </Reveal>
+    );
+  };
+
+  return (
+    <div className="space-y-6 sm:space-y-8 animate-fade-in">
+      <PageHeader
+        eyebrow={isEn ? 'Automated Integrity Checks' : 'स्वचालित डेटाबेस मिलान व ऑडिट'}
+        title={isEn ? 'Cadastre & Credit Discrepancies' : 'भूलेख व ऋण विसंगति अलर्ट'}
+        subtitle={isEn
+          ? 'Cross-checked anomalies between your revenue records, bank loans, and subsidies.'
+          : 'राजस्व रिकॉर्ड, बैंक ऋण एवं सब्सिडी के बीच पहचानी गई विसंगतियां।'}
+      />
+
+      {/* Summary Header Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-paper-100 p-4 border border-indigo-900 rounded-sm shadow-hard-sm animate-fade-in">
+        <div>
+          <span className="text-xs uppercase font-bold text-ink-muted block">
+            {isEn ? 'Total Flags' : 'कुल विसंगति अलर्ट'}
+          </span>
+          <span className="text-2xl font-bold font-serif text-indigo-900 tabular-nums">
+            {discrepancies.length}
+          </span>
+        </div>
+        <div>
+          <span className="text-xs uppercase font-bold text-rust-600 block">
+            {isEn ? 'High Priority' : 'उच्च प्राथमिकता'}
+          </span>
+          <span className="text-2xl font-bold font-serif text-rust-600 tabular-nums">
+            {highList.length}
+          </span>
+        </div>
+        <div>
+          <span className="text-xs uppercase font-bold text-ochre-600 block">
+            {isEn ? 'Medium Priority' : 'मध्यम प्राथमिकता'}
+          </span>
+          <span className="text-2xl font-bold font-serif text-ochre-600 tabular-nums">
+            {mediumList.length}
+          </span>
+        </div>
+        <div>
+          <span className="text-xs uppercase font-bold text-ink-muted block">
+            {isEn ? 'Low Priority' : 'सामान्य सूचना'}
+          </span>
+          <span className="text-2xl font-bold font-serif text-indigo-900 tabular-nums">
+            {lowList.length}
+          </span>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="space-y-4">
+          <Skeleton variant="card" />
+          <Skeleton variant="card" />
+        </div>
+      ) : discrepancies.length === 0 ? (
+        <Panel accent="sage" className="text-center py-12">
+          <div className="w-12 h-12 rounded-full bg-sage-100 border border-sage-600 text-sage-600 flex items-center justify-center mx-auto mb-3">
+            <ShieldCheck className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg font-bold font-serif text-indigo-900">
+            {isEn ? 'No Discrepancies Detected' : 'कोई विसंगति नहीं मिली'}
+          </h2>
+          <p className="text-xs text-ink-muted mt-1">
+            {isEn ? 'Your land records and credit accounts are fully synchronized.' : 'आपके भूमि अभिलेख एवं बैंक खाते पूर्णतः मेल खाते हैं।'}
+          </p>
+        </Panel>
+      ) : (
+        <div className="space-y-8">
+          {/* HIGH Severity Section with Stagger (M3.4) */}
+          {highList.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-rust-600">
+                <AlertOctagon className="w-4 h-4" />
+                <h2 className="text-xs uppercase font-bold tracking-wider">
+                  01 • {isEn ? 'High Priority' : 'उच्च प्राथमिकता'} ({highList.length})
+                </h2>
+              </div>
+              <div className="space-y-4">
+                {highList.map((item) => renderDiscrepancyCard(item, 'rust'))}
+              </div>
+            </div>
+          )}
+
+          {/* MEDIUM Severity Section */}
+          {mediumList.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-ochre-600">
+                <h2 className="text-xs uppercase font-bold tracking-wider">
+                  02 • {isEn ? 'Medium Priority' : 'मध्यम प्राथमिकता'} ({mediumList.length})
+                </h2>
+              </div>
+              <div className="space-y-4">
+                {mediumList.map((item) => renderDiscrepancyCard(item, 'ochre'))}
+              </div>
+            </div>
+          )}
+
+          {/* LOW Severity Section */}
+          {lowList.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-indigo-900">
+                <h2 className="text-xs uppercase font-bold tracking-wider">
+                  03 • {isEn ? 'Low Priority' : 'सामान्य सूचना'} ({lowList.length})
+                </h2>
+              </div>
+              <div className="space-y-4">
+                {lowList.map((item) => renderDiscrepancyCard(item, 'indigo'))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* =========================================================================
+          AGRISTACK REAL-TIME CROSS-VERIFICATION & SYNC MONITOR
+          ========================================================================= */}
+      <div className="bg-paper-100 border-2 border-indigo-900 rounded-sm p-5 shadow-hard space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-paper-200 pb-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-saffron-500" />
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-clay-700 font-mono block">
+                {isEn ? 'National Agri Database Integration (AgriStack Engine v2.4)' : 'राष्ट्रीय कृषि डेटाबेस एकीकरण (AgriStack Engine v2.4)'}
+              </span>
+              <h3 className="font-serif font-bold text-base sm:text-lg text-indigo-950">
+                {isEn ? 'Cadastre, Aadhaar & Bank Database Real-Time Sync Status' : 'भूलेख, आधार एवं बैंक डेटाबेस रियल-टाइम मिलान स्थिति'}
+              </h3>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-xs font-mono font-bold text-sage-800 bg-sage-50 px-2.5 py-1 border border-sage-600 rounded-xs">
+            <div className="w-2 h-2 rounded-full bg-sage-500 animate-pulse" />
+            <span>{isEn ? 'Last Audit: 15 Feb 2026, 09:30 AM' : 'अंतिम ऑडिट: 15 फ़रवरी 2026, 09:30 AM'}</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          <div className="p-3 bg-paper-50 rounded-xs border border-paper-200 space-y-1">
+            <span className="text-[10px] uppercase font-bold text-clay-600 block">
+              {isEn ? '01 • Digital Bhulekh (7/12)' : '01 • डिजिटल भूलेख (7/12)'}
+            </span>
+            <div className="font-bold text-indigo-950 flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-sage-600" />
+              <span>{isEn ? 'Khasra 102/1 & 145/2 Linked' : 'खसरा 102/1 व 145/2 लिंक'}</span>
+            </div>
+            <p className="text-[11px] text-ink-muted">
+              {isEn ? 'Synced with Maharashtra e-Mahabhumi' : 'महाराष्ट्र ई-महाभूमि पोर्टल से सिंक'}
+            </p>
+          </div>
+
+          <div className="p-3 bg-paper-50 rounded-xs border border-paper-200 space-y-1">
+            <span className="text-[10px] uppercase font-bold text-clay-600 block">
+              {isEn ? '02 • PM-KISAN DBT' : '02 • PM-KISAN DBT'}
+            </span>
+            <div className="font-bold text-indigo-950 flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-sage-600" />
+              <span>{isEn ? 'Aadhaar NPCI Mapping Verified' : 'आधार NPCI मैपिंग सत्यापित'}</span>
+            </div>
+            <p className="text-[11px] text-ink-muted">
+              {isEn ? '19th Installment Successfully Credited' : '19वीं किस्त सफलतापूर्वक प्रेषित'}
+            </p>
+          </div>
+
+          <div className="p-3 bg-paper-50 rounded-xs border border-paper-200 space-y-1">
+            <span className="text-[10px] uppercase font-bold text-clay-600 block">
+              {isEn ? '03 • CERSAI Loan Registry' : '03 • CERSAI ऋण रजिस्ट्री'}
+            </span>
+            <div className="font-bold text-rust-600 flex items-center gap-1.5">
+              <AlertOctagon className="w-3.5 h-3.5 text-rust-600" />
+              <span>{isEn ? '1 Overdue Account (NPA Alert)' : '1 खाता अतिदेय (NPA अलर्ट)'}</span>
+            </div>
+            <p className="text-[11px] text-ink-muted">
+              {isEn ? 'Bank of Maharashtra Branch Linked' : 'बैंक ऑफ महाराष्ट्र शाखा संबद्ध'}
+            </p>
+          </div>
+
+          <div className="p-3 bg-paper-50 rounded-xs border border-paper-200 space-y-1">
+            <span className="text-[10px] uppercase font-bold text-clay-600 block">
+              {isEn ? '04 • Satellite GIS Cadastre' : '04 • उपग्रह GIS कैडस्ट्रे'}
+            </span>
+            <div className="font-bold text-indigo-950 flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-sage-600" />
+              <span>{isEn ? '100% Geo-Boundary Mapped' : '100% जियो-बाउंड्री मैप्ड'}</span>
+            </div>
+            <p className="text-[11px] text-ink-muted">
+              {isEn ? 'Integrated with PMFBY Crop Insurance' : 'PMFBY फसल बीमा से एकीकृत'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          4-STEP STATUTORY RESOLUTION WORKFLOW
+          ========================================================================= */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between border-b border-paper-200 pb-2">
+          <div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-clay-700 font-mono block">
+              {isEn ? 'Transparent Digital Workflow' : 'पारदर्शी डिजिटल प्रक्रिया'}
+            </span>
+            <h3 className="font-serif font-bold text-lg text-indigo-950">
+              {isEn ? 'Step-by-Step Discrepancy Correction Guide' : 'विसंगति सुधार एवं डिजिटलीकरण चरणबद्ध मार्गदर्शिका'}
+            </h3>
+          </div>
+          <span className="text-xs font-serif font-bold text-indigo-900">
+            {isEn ? '4 Simple Steps' : '4 सरल चरण'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-paper-100 border-2 border-indigo-900 rounded-sm p-4 shadow-hard flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xl font-serif font-bold text-clay-600">01</span>
+                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-paper-200 text-indigo-900 rounded-xs">
+                  {isEn ? 'Online' : 'ऑनलाइन'}
+                </span>
+              </div>
+              <h4 className="font-bold text-sm text-indigo-950">
+                {isEn ? 'e-KYC Aadhaar Authentication' : 'ई-केवाईसी आधार प्रमाणीकरण'}
+              </h4>
+              <p className="text-xs text-ink-muted leading-relaxed">
+                {isEn
+                  ? 'Official verification of Aadhaar name and date of birth via biometric or OTP.'
+                  : 'बायोमीट्रिक अथवा OTP द्वारा आधार नाम व जन्मतिथि का आधिकारिक मिलान।'}
+              </p>
+            </div>
+            <div className="mt-3 pt-2 text-[11px] font-semibold text-sage-800">
+              {isEn ? '✓ Automated data verification' : '✓ स्वतः डेटा सत्यापन'}
+            </div>
+          </div>
+
+          <div className="bg-paper-100 border-2 border-indigo-900 rounded-sm p-4 shadow-hard flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xl font-serif font-bold text-clay-600">02</span>
+                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-paper-200 text-indigo-900 rounded-xs">
+                  {isEn ? 'Satellite GIS' : 'उपग्रह GIS'}
+                </span>
+              </div>
+              <h4 className="font-bold text-sm text-indigo-950">
+                {isEn ? 'Khasra Demarcation & Survey' : 'खसरा सीमांकन व सर्वे'}
+              </h4>
+              <p className="text-xs text-ink-muted leading-relaxed">
+                {isEn
+                  ? 'Ground verification and boundary mapping of actual cultivated parcels via drone or satellite.'
+                  : 'ड्रोन अथवा उपग्रह नक्शे द्वारा वास्तविक जोत रकबे का सीमांकन व सत्यापन।'}
+              </p>
+            </div>
+            <div className="mt-3 pt-2 text-[11px] font-semibold text-sage-800">
+              {isEn ? '✓ Accurate area measurement' : '✓ त्रुटिरहित क्षेत्रफल माप'}
+            </div>
+          </div>
+
+          <div className="bg-paper-100 border-2 border-indigo-900 rounded-sm p-4 shadow-hard flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xl font-serif font-bold text-clay-600">03</span>
+                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-paper-200 text-indigo-900 rounded-xs">
+                  {isEn ? 'Bank Sync' : 'बैंकिंग सिंक'}
+                </span>
+              </div>
+              <h4 className="font-bold text-sm text-indigo-950">
+                {isEn ? 'Bank Account & NPCI Mapping' : 'बैंक खाता व NPCI मैपिंग'}
+              </h4>
+              <p className="text-xs text-ink-muted leading-relaxed">
+                {isEn
+                  ? 'Spelling alignment in KCC account and activation of 4% interest subvention by Branch Manager.'
+                  : 'शाखा प्रबंधक द्वारा KCC खाते में स्पेलिंग शुद्धि एवं 4% ब्याज अनुदान सक्रियण।'}
+              </p>
+            </div>
+            <div className="mt-3 pt-2 text-[11px] font-semibold text-sage-800">
+              {isEn ? '✓ Direct DBT benefit ensured' : '✓ DBT सीधा लाभ सुनिश्चित'}
+            </div>
+          </div>
+
+          <div className="bg-paper-100 border-2 border-indigo-900 rounded-sm p-4 shadow-hard flex flex-col justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xl font-serif font-bold text-clay-600">04</span>
+                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 bg-paper-200 text-indigo-900 rounded-xs">
+                  {isEn ? 'Digital Signature' : 'डिजिटल हस्ताक्षर'}
+                </span>
+              </div>
+              <h4 className="font-bold text-sm text-indigo-950">
+                {isEn ? 'Patwari Approval & Rectification' : 'पटवारी अनुमोदन व शुद्धि'}
+              </h4>
+              <p className="text-xs text-ink-muted leading-relaxed">
+                {isEn
+                  ? 'Final issuance of digitally signed 7/12 RoR extract by Revenue Inspector.'
+                  : 'राजस्व निरीक्षक द्वारा डिजिटल हस्ताक्षरित 7/12 खतौनी का अंतिम निर्गमन।'}
+              </p>
+            </div>
+            <div className="mt-3 pt-2 text-[11px] font-semibold text-sage-800">
+              {isEn ? '✓ 100% dispute resolution' : '✓ विसंगति का 100% निस्तारण'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          WARDHA TEHSIL E-SEVA HELPDESK & STATUTORY RIGHTS
+          ========================================================================= */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <div className="bg-paper-50 border-2 border-indigo-900 rounded-sm p-5 shadow-hard-sm space-y-3">
+          <div className="flex items-center justify-between border-b border-paper-200 pb-2">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-clay-600 shrink-0" />
+              <h4 className="font-serif font-bold text-base text-indigo-950">
+                {isEn ? 'Wardha Tehsil e-Seva Kendra & Talathi Desk' : 'वर्धा तहसील ई-सेवा केंद्र व पटवारी डेस्क'}
+              </h4>
+            </div>
+            <span className="text-xs font-mono font-bold text-sage-800 bg-sage-50 px-2 py-0.5 border border-sage-600 rounded-xs">
+              {isEn ? 'Open: 10 AM - 5 PM' : 'खुला: 10 AM - 5 PM'}
+            </span>
+          </div>
+
+          <p className="text-xs text-ink-muted leading-relaxed">
+            {isEn
+              ? 'For in-person assistance with anomaly corrections, farmers can visit the dedicated revenue helpdesk at the Tehsil complex:'
+              : 'ऑनलाइन विसंगति सुधार में किसी भी कठिनाई हेतु किसान सीधे वर्धा तहसील परिसर स्थित विशेष राजस्व सहायता केंद्र पर संपर्क कर सकते हैं:'
+            }
+          </p>
+
+          <div className="space-y-2 text-xs">
+            <div className="p-2.5 bg-paper-100 rounded-xs border border-paper-200 flex justify-between items-center">
+              <div>
+                <span className="font-bold text-indigo-950 block">
+                  {isEn ? 'Chandrapur Khurd Circle Talathi Office' : 'चंद्रपुर खुर्द सर्कल तलाठी कार्यालय'}
+                </span>
+                <span className="text-[11px] text-ink-muted">
+                  {isEn ? 'Patwari: Shri Sachin Kamble • Phone: 94221-XXXXX' : 'पटवारी: श्री सचिन कांबले • फोन: 94221-XXXXX'}
+                </span>
+              </div>
+              <span className="text-[11px] font-bold text-clay-600 bg-paper-50 px-2 py-1 border border-paper-200">
+                {isEn ? 'Panchayat Bhavan' : 'पंचायत भवन'}
+              </span>
+            </div>
+
+            <div className="p-2.5 bg-paper-100 rounded-xs border border-paper-200 flex justify-between items-center">
+              <div>
+                <span className="font-bold text-indigo-950 block">
+                  {isEn ? 'Wardha District Bhulekh e-Helpdesk' : 'वर्धा जिला भूलेख ई-हेल्पडेस्क'}
+                </span>
+                <span className="text-[11px] text-ink-muted">
+                  {isEn ? 'Toll-free helpline: 1800-120-8040 • Email: help.bhulekh@maharashtra.gov.in' : 'टोल-फ्री समाधान: 1800-120-8040 • ईमेल: help.bhulekh@maharashtra.gov.in'}
+                </span>
+              </div>
+              <span className="text-[11px] font-bold text-sage-700 bg-paper-50 px-2 py-1 border border-paper-200">
+                {isEn ? '24x7 Desk' : '24x7 सेवा'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-paper-50 border-2 border-indigo-900 rounded-sm p-5 shadow-hard-sm space-y-3">
+          <div className="flex items-center gap-2 text-indigo-950 border-b border-paper-200 pb-2">
+            <ShieldCheck className="w-4 h-4 text-indigo-900 shrink-0" />
+            <h4 className="font-serif font-bold text-base text-indigo-950">
+              {isEn ? 'Maharashtra Land Revenue Code 1966 (Section 155 Rights)' : 'महाराष्ट्र भू-राजस्व संहिता 1966 (धारा 155 अंतर्गत वैधानिक अधिकार)'}
+            </h4>
+          </div>
+
+          <p className="text-xs text-ink-muted leading-relaxed">
+            {isEn
+              ? 'Under Section 155, every land title holder holds the statutory right to have clerical or arithmetic errors in revenue records (7/12, 8-A and Khasra) rectified without cost.'
+              : 'धारा 155 के प्रावधानों के अंतर्गत राजस्व अभिलेखों (7/12, 8-A एवं खसरा खतौनी) में लिपिकीय अथवा लिपिक-संबंधी अशुद्धियों को ठीक कराने का प्रत्येक खातेदार को निःशुल्क कानूनी अधिकार प्राप्त है।'
+            }
+          </p>
+
+          <div className="space-y-1.5 text-xs">
+            <div className="flex items-center gap-2 text-sage-800 font-semibold">
+              <CheckCircle2 className="w-3.5 h-3.5 text-sage-600 shrink-0" />
+              <span>
+                {isEn ? 'Guaranteed 48-hour resolution for spelling errors in names, father name, or surname' : 'नाम, उपनाम एवं पिता के नाम की वर्तनी त्रुटि का 48 घंटे में समाधान'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-sage-800 font-semibold">
+              <CheckCircle2 className="w-3.5 h-3.5 text-sage-600 shrink-0" />
+              <span>
+                {isEn ? 'Zero judicial court fee or stamp duty required for record rectification' : 'सुधार हेतु कोई अदालती स्टाम्प शुल्क अथवा कोर्ट फीस देय नहीं है'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-sage-800 font-semibold">
+              <CheckCircle2 className="w-3.5 h-3.5 text-sage-600 shrink-0" />
+              <span>
+                {isEn ? 'Automatic restoration of bank credit limits and DBT subsidies upon approval' : 'सुधार के उपरांत बैंक ऋण सीमा व DBT स्वतः बहाल हो जाते हैं'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
