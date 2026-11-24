@@ -1,0 +1,11 @@
+{
+  "buildCommand": "cd kisansetu-frontend && npm install && npm run build",
+  "outputDirectory": "kisansetu-frontend/dist",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
