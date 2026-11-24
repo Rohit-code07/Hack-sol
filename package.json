@@ -1,0 +1,12 @@
+{
+  "name": "kisansetu-platform",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "kisansetu-frontend"
+  ],
+  "scripts": {
+    "build": "npm --workspace=kisansetu-frontend run build",
+    "dev": "npm --workspace=kisansetu-frontend run dev"
+  }
+}

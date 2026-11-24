@@ -1,0 +1,11 @@
+# Ignore heavy backend and Python AI services from Vercel build
+ai-service
+Backend
+chroma_db
+documentation
+kisansetuFrontend
+*.ps1
+*.txt
+*.pdf
+*.md
+docker-compose.yml
