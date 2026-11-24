@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy dependency definitions
-COPY requirements.txt .
+COPY requirements-ai.txt ./requirements.txt
 
 # Install dependencies
 RUN pip install --upgrade pip && \
