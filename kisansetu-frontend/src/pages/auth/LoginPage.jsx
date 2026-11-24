@@ -1,11 +1,9 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, useLocation, useSearchParams, Link, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Sprout, Landmark, ShieldAlert, Globe, ArrowRight, Check } from 'lucide-react';
+import { Sprout, Landmark, ShieldCheck, Globe, ArrowRight } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import { LanguageContext } from '../../context/LanguageContext';
-import { farmers } from '../../constants/mockData';
-import { DEMO_HERO_FARMER_ID, DEFAULT_OFFICER_NAME } from '../../constants';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import Panel from '../../components/common/Panel';
 import Button from '../../components/common/Button';
@@ -13,13 +11,13 @@ import Footer from '../../components/common/Footer';
 
 /**
  * LoginPage component
- * Provides 1-click persona switching (Farmer vs Bank Officer) with animated entry and feedback.
+ * Provides genuine user authentication against the Spring Boot backend.
  *
  * @returns {JSX.Element} Login portal interface
  */
 export default function LoginPage() {
   const { t } = useTranslation();
-  useDocumentTitle('login.title', 'Demo Access Portal');
+  useDocumentTitle('login.title', 'User Login');
   const { isAuthenticated, role, loginAsFarmer, loginAsBank } = useAuth();
   const { language, toggleLanguage } = useContext(LanguageContext);
   const navigate = useNavigate();
@@ -32,9 +30,12 @@ export default function LoginPage() {
     paramRole === 'bank' ? 'bank' : 'farmer'
   );
 
-  const [selectedFarmerId, setSelectedFarmerId] = useState(DEMO_HERO_FARMER_ID);
-  const [selectedOfficer, setSelectedOfficer] = useState(DEFAULT_OFFICER_NAME);
+  const [farmerUsername, setFarmerUsername] = useState('');
+  const [farmerPassword, setFarmerPassword] = useState('');
+  const [bankUsername, setBankUsername] = useState('bank_officer');
+  const [bankPassword, setBankPassword] = useState('Password@123');
   const [loadingRole, setLoadingRole] = useState(null);
+  const [loginError, setLoginError] = useState(null);
 
   useEffect(() => {
     if (paramRole === 'bank' || paramRole === 'farmer') {
@@ -49,11 +50,22 @@ export default function LoginPage() {
 
   const handleFarmerSubmit = async (e) => {
     e.preventDefault();
+    if (!farmerUsername.trim()) {
+      setLoginError(t('login.enterFarmerUsername', 'Please enter your username or registered mobile number.'));
+      return;
+    }
     setLoadingRole('farmer');
+    setLoginError(null);
     try {
-      await loginAsFarmer(selectedFarmerId);
-      const from = location.state?.from?.pathname || '/farmer';
-      navigate(from, { replace: true });
+      const res = await loginAsFarmer(farmerUsername.trim(), farmerPassword);
+      if (res && res.success) {
+        const from = location.state?.from?.pathname || '/farmer';
+        navigate(from, { replace: true });
+      } else {
+        setLoginError(res?.message || 'Invalid credentials or user not registered.');
+      }
+    } catch (err) {
+      setLoginError(err.message || 'Unable to connect to authentication server');
     } finally {
       setLoadingRole(null);
     }
@@ -61,21 +73,26 @@ export default function LoginPage() {
 
   const handleBankSubmit = async (e) => {
     e.preventDefault();
+    if (!bankUsername.trim()) {
+      setLoginError(t('login.enterBankUsername', 'Please enter your officer username.'));
+      return;
+    }
     setLoadingRole('bank');
+    setLoginError(null);
     try {
-      await loginAsBank(selectedOfficer);
-      const from = location.state?.from?.pathname || '/bank';
-      navigate(from, { replace: true });
+      const res = await loginAsBank(bankUsername.trim(), bankPassword);
+      if (res && res.success) {
+        const from = location.state?.from?.pathname || '/bank';
+        navigate(from, { replace: true });
+      } else {
+        setLoginError(res?.message || 'Invalid officer credentials.');
+      }
+    } catch (err) {
+      setLoginError(err.message || 'Unable to connect to authentication server');
     } finally {
       setLoadingRole(null);
     }
   };
-
-  const officerOptions = [
-    { name: 'Sunita Verma', role: 'Branch Credit Officer', branch: 'Wardha Lead Branch' },
-    { name: 'Rajesh Khurana', role: 'Lead Bank Verifier', branch: 'Yavatmal District Office' },
-    { name: 'Meenakshi Iyer', role: 'Chief Auditor', branch: 'Nagpur Regional Hub' },
-  ];
 
   return (
     <div className="min-h-screen flex flex-col bg-paper-50 bg-grain">
@@ -105,15 +122,21 @@ export default function LoginPage() {
       <main className="flex-1 max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-14 flex flex-col justify-center">
         <div className="text-center max-w-2xl mx-auto mb-8 animate-fade-up">
           <span className="text-xs uppercase font-bold tracking-wider text-clay-500 block mb-1">
-            {t('login.eyebrow', 'Sandbox Simulation Access')}
+            {t('login.eyebrow', 'Secure Login Access')}
           </span>
           <h1 className="text-3xl sm:text-4xl font-bold font-serif text-indigo-900 tracking-tight">
-            {t('login.title', 'Choose Persona to Enter KisanSetu')}
+            {t('login.title', 'Sign in to KisanSetu')}
           </h1>
           <p className="text-sm sm:text-base text-ink-muted mt-2">
-            {t('login.subline', 'Instant 1-click access with pre-configured synthetic profiles. No password required for demo.')}
+            {t('login.subline', 'Enter your registered credentials to access your digital agricultural portal.')}
           </p>
         </div>
+
+        {loginError && (
+          <div className="mb-6 p-3 bg-rust-100 border border-rust-600 rounded-sm text-xs font-semibold text-rust-600 text-center animate-shake">
+            {loginError}
+          </div>
+        )}
 
         {/* Mobile Persona Switcher Tabs (<768px) */}
         <div className="md:hidden flex border-b-2 border-indigo-900 mb-6" role="tablist">
@@ -128,7 +151,7 @@ export default function LoginPage() {
                 : 'border-transparent text-ink-muted hover:text-indigo-900'
             }`}
           >
-            {t('login.farmerCardTitle', 'Farmer Console')}
+            {t('login.farmerCardTitle', 'Farmer Portal')}
           </button>
           <button
             type="button"
@@ -168,45 +191,32 @@ export default function LoginPage() {
               </p>
 
               <form onSubmit={handleFarmerSubmit} className="space-y-4">
-                <div>
-                  <span className="block text-xs uppercase font-bold tracking-wider text-clay-500 mb-2">
-                    {t('login.farmerSelectLabel', 'Select Farmer Profile (Demo)')}
-                  </span>
-
-                  {/* Profile Cards Selection */}
-                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-                    {farmers.slice(0, 5).map((f) => {
-                      const isSelected = selectedFarmerId === f.id;
-                      return (
-                        <div
-                          key={f.id}
-                          onClick={() => setSelectedFarmerId(f.id)}
-                          className={`p-3 rounded-sm border cursor-pointer transition-all duration-150 flex items-center justify-between text-xs ${
-                            isSelected
-                              ? 'bg-clay-100/60 border-clay-500 shadow-sm'
-                              : 'bg-paper-100/60 border-paper-200 hover:bg-paper-100'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-paper-200 border border-indigo-900 font-bold flex items-center justify-center text-indigo-900 font-serif">
-                              {f.name.charAt(0)}
-                            </div>
-                            <div>
-                              <div className="font-bold text-indigo-900 text-sm">{f.name}</div>
-                              <div className="text-ink-muted">
-                                {f.village}, {f.district}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-clay-500 bg-paper-50 px-2 py-0.5 rounded border border-paper-200">
-                              {f.id}
-                            </span>
-                            {isSelected && <Check className="w-4 h-4 text-clay-500" />}
-                          </div>
-                        </div>
-                      );
-                    })}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs uppercase font-bold tracking-wider text-clay-500 mb-1">
+                      {t('login.farmerUserLabel', 'Mobile Number / Username')}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={farmerUsername}
+                      onChange={(e) => setFarmerUsername(e.target.value)}
+                      placeholder={t('login.farmerUserPlaceholder', 'e.g. 9827100001 or username')}
+                      className="w-full px-3 py-2 text-sm bg-paper-100 border border-indigo-900 rounded-sm focus:outline-none focus:ring-2 focus:ring-clay-500 text-indigo-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase font-bold tracking-wider text-clay-500 mb-1">
+                      {t('login.farmerPassLabel', 'Password')}
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      value={farmerPassword}
+                      onChange={(e) => setFarmerPassword(e.target.value)}
+                      placeholder={t('login.farmerPassPlaceholder', 'Enter account password')}
+                      className="w-full px-3 py-2 text-sm bg-paper-100 border border-indigo-900 rounded-sm focus:outline-none focus:ring-2 focus:ring-clay-500 text-indigo-900"
+                    />
                   </div>
                 </div>
 
@@ -257,38 +267,32 @@ export default function LoginPage() {
               </p>
 
               <form onSubmit={handleBankSubmit} className="space-y-4">
-                <div>
-                  <span className="block text-xs uppercase font-bold tracking-wider text-clay-500 mb-2">
-                    {t('login.bankSelectLabel', 'Select Branch Officer (Demo)')}
-                  </span>
-
-                  {/* Officer Cards Selection */}
-                  <div className="space-y-2">
-                    {officerOptions.map((off) => {
-                      const isSelected = selectedOfficer === off.name;
-                      return (
-                        <div
-                          key={off.name}
-                          onClick={() => setSelectedOfficer(off.name)}
-                          className={`p-3 rounded-sm border cursor-pointer transition-all duration-150 flex items-center justify-between text-xs ${
-                            isSelected
-                              ? 'bg-indigo-100/60 border-indigo-900 shadow-sm'
-                              : 'bg-paper-100/60 border-paper-200 hover:bg-paper-100'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-indigo-900 text-paper-50 font-bold flex items-center justify-center text-xs font-serif">
-                              {off.name.charAt(0)}
-                            </div>
-                            <div>
-                              <div className="font-bold text-indigo-900 text-sm">{off.name}</div>
-                              <div className="text-ink-muted">{off.role} • {off.branch}</div>
-                            </div>
-                          </div>
-                          {isSelected && <Check className="w-4 h-4 text-indigo-900" />}
-                        </div>
-                      );
-                    })}
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs uppercase font-bold tracking-wider text-clay-500 mb-1">
+                      {t('login.bankUserLabel', 'Bank Officer Username')}
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={bankUsername}
+                      onChange={(e) => setBankUsername(e.target.value)}
+                      placeholder={t('login.bankUserPlaceholder', 'e.g. officer_username')}
+                      className="w-full px-3 py-2 text-sm bg-paper-100 border border-indigo-900 rounded-sm focus:outline-none focus:ring-2 focus:ring-indigo-900 text-indigo-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase font-bold tracking-wider text-clay-500 mb-1">
+                      {t('login.bankPassLabel', 'Password')}
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      value={bankPassword}
+                      onChange={(e) => setBankPassword(e.target.value)}
+                      placeholder={t('login.bankPassPlaceholder', 'Enter officer password')}
+                      className="w-full px-3 py-2 text-sm bg-paper-100 border border-indigo-900 rounded-sm focus:outline-none focus:ring-2 focus:ring-indigo-900 text-indigo-900"
+                    />
                   </div>
                 </div>
 
@@ -313,10 +317,10 @@ export default function LoginPage() {
           </Panel>
         </div>
 
-        {/* Demo Disclaimer */}
+        {/* Security & Verification Disclaimer */}
         <div className="mt-8 p-4 bg-paper-100 border border-indigo-900 rounded-sm flex items-center justify-center gap-2 text-xs text-ink-muted text-center shadow-hard-sm animate-fade-in">
-          <ShieldAlert className="w-4 h-4 text-ochre-600 shrink-0" />
-          <span>{t('login.demoNotice', 'Demo Prototype: All farmer and bank records are synthetic. No real Aadhaar or bank credentials required.')}</span>
+          <ShieldCheck className="w-4 h-4 text-clay-500 shrink-0" />
+          <span>{t('login.securityNotice', 'Official System Notice: All farmer and agricultural credit records are strictly user-managed and authenticated.')}</span>
         </div>
       </main>
 

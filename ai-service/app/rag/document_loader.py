@@ -25,10 +25,33 @@ class PolicyDocumentLoader:
     @staticmethod
     def load_pdf_pages(file_path: str, filename: str) -> List[Document]:
         """
-        Extracts pages from PDF using PyMuPDF, falling back to PyPDFLoader.
+        Extracts pages from PDF (using PyMuPDF or PyPDFLoader) or plain text files.
         Page numbers in returned Document.metadata['page'] are 1-indexed.
         """
         documents: List[Document] = []
+
+        # Plain text handling
+        if filename.lower().endswith(".txt"):
+            try:
+                with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+                    text = f.read().strip()
+                if text:
+                    return [
+                        Document(
+                            page_content=text,
+                            metadata={
+                                "source": filename,
+                                "page": 1,
+                                "total_pages": 1
+                            }
+                        )
+                    ]
+            except Exception as e:
+                logger.error("Failed to read text file %s: %s", filename, e)
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"Unable to read file '{filename}': {str(e)}"
+                )
         
         # Primary: PyMuPDF (fitz)
         try:
@@ -145,7 +168,7 @@ class PolicyDocumentLoader:
         if suffix not in settings.ALLOWED_EXTENSIONS:
             raise HTTPException(
                 status_code=400,
-                detail=f"Unsupported file type '{suffix}'. Only PDF files are permitted."
+                detail=f"Unsupported file type '{suffix}'. Permitted formats: {settings.ALLOWED_EXTENSIONS}"
             )
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:

@@ -10,7 +10,6 @@ import {
   Info,
 } from 'lucide-react';
 import { verifyLand } from '../../services/bankService';
-import { verificationHistory } from '../../constants/mockData';
 import { formatDate } from '../../utils/formatters';
 import useToast from '../../hooks/useToast';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
@@ -32,11 +31,11 @@ export default function LandVerificationPage() {
   const prefersReducedMotion = useReducedMotion();
   useDocumentTitle('bank.landVerificationTitle', 'Cross-Registry Land Verification');
 
-  const [surveyNumber, setSurveyNumber] = useState('102/1');
-  const [farmerId, setFarmerId] = useState('FRM-0003');
+  const [surveyNumber, setSurveyNumber] = useState('');
+  const [farmerId, setFarmerId] = useState('');
   const [loading, setLoading] = useState(false);
   const [verdictResult, setVerdictResult] = useState(null);
-  const [recentChecks, setRecentChecks] = useState(verificationHistory);
+  const [recentChecks, setRecentChecks] = useState([]);
 
   const handleVerify = async (e) => {
     e.preventDefault();
@@ -266,19 +265,19 @@ export default function LandVerificationPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-ink-muted">{t('land.registeredOwner', 'Registered Owner')}:</span>
                   <span className="font-bold text-indigo-900">
-                    {verdictResult.registeredOwner || 'Ramesh Kumar (Title Holder)'}
+                    {verdictResult.registeredOwner || ''}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-ink-muted">{t('land.area', 'Registered Area')}:</span>
                   <span className="font-bold text-indigo-900 tabular-nums">
-                    {verdictResult.areaHectares ? `${verdictResult.areaHectares} ha` : '2.40 ha'}
+                    {verdictResult.areaHectares ? `${verdictResult.areaHectares} ha` : ''}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-ink-muted">{t('land.crop', 'Recorded Crop')}:</span>
                   <span className="font-medium text-indigo-900">
-                    {verdictResult.cropType || 'Soybean'}
+                    {verdictResult.cropType || ''}
                   </span>
                 </div>
               </div>
@@ -297,7 +296,7 @@ export default function LandVerificationPage() {
                 <div className="flex justify-between items-center">
                   <span className="text-ink-muted">{t('bank.applicantName', 'Applicant Profile Name')}:</span>
                   <div className="flex items-center gap-1.5 font-bold text-indigo-900">
-                    <span>{farmerId === 'FRM-0003' ? 'Ramesh Kumar' : farmerId}</span>
+                    <span>{verdictResult.applicantName || farmerId}</span>
                     <span className={prefersReducedMotion ? '' : 'animate-scale-in [animation-duration:300ms]'}>
                       {verdictResult.ownerMatch ? (
                         <CheckCircle2 className="w-4 h-4 text-sage-600" />

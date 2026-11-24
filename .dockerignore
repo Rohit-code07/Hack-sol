@@ -1,0 +1,8 @@
+.git
+.idea
+*.log
+Backend/target
+kisansetuFrontend/node_modules
+kisansetuFrontend/dist
+ai-service/.venv
+ai-service/__pycache__

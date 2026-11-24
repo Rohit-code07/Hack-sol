@@ -7,6 +7,7 @@ import com.kisansetu.common.enums.DiscrepancySeverity;
 import com.kisansetu.common.enums.VerificationStatus;
 import com.kisansetu.common.exception.ResourceNotFoundException;
 import com.kisansetu.common.util.FarmerAccessValidator;
+import com.kisansetu.common.util.SecurityUtils;
 import com.kisansetu.discrepancy.entity.Discrepancy;
 import com.kisansetu.discrepancy.repository.DiscrepancyRepository;
 import com.kisansetu.entitlement.calculator.RuleEngine;
@@ -41,6 +42,15 @@ public class EntitlementService {
 
     @Transactional
     public EntitlementCalculationResponse evaluateKcc(KccEvaluationRequest request) {
+        if (request.getFarmerId() == null || SecurityUtils.isFarmer()) {
+            String username = SecurityUtils.getCurrentUsername();
+            if (username != null) {
+                farmerRepository.findByUserUsername(username).ifPresent(f -> request.setFarmerId(f.getId()));
+            }
+        }
+        if (request.getFarmerId() == null) {
+            throw new ResourceNotFoundException("Farmer", "username", SecurityUtils.getCurrentUsername());
+        }
         farmerAccessValidator.validateAccess(request.getFarmerId());
         Farmer farmer = farmerRepository.findById(request.getFarmerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Farmer", "id", request.getFarmerId()));
@@ -60,6 +70,15 @@ public class EntitlementService {
 
     @Transactional
     public EntitlementCalculationResponse verifyMsp(MspVerificationRequest request) {
+        if (request.getFarmerId() == null || SecurityUtils.isFarmer()) {
+            String username = SecurityUtils.getCurrentUsername();
+            if (username != null) {
+                farmerRepository.findByUserUsername(username).ifPresent(f -> request.setFarmerId(f.getId()));
+            }
+        }
+        if (request.getFarmerId() == null) {
+            throw new ResourceNotFoundException("Farmer", "username", SecurityUtils.getCurrentUsername());
+        }
         farmerAccessValidator.validateAccess(request.getFarmerId());
         Farmer farmer = farmerRepository.findById(request.getFarmerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Farmer", "id", request.getFarmerId()));
@@ -79,6 +98,15 @@ public class EntitlementService {
 
     @Transactional
     public EntitlementCalculationResponse reconcileInsurance(InsuranceReconciliationRequest request) {
+        if (request.getFarmerId() == null || SecurityUtils.isFarmer()) {
+            String username = SecurityUtils.getCurrentUsername();
+            if (username != null) {
+                farmerRepository.findByUserUsername(username).ifPresent(f -> request.setFarmerId(f.getId()));
+            }
+        }
+        if (request.getFarmerId() == null) {
+            throw new ResourceNotFoundException("Farmer", "username", SecurityUtils.getCurrentUsername());
+        }
         farmerAccessValidator.validateAccess(request.getFarmerId());
         Farmer farmer = farmerRepository.findById(request.getFarmerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Farmer", "id", request.getFarmerId()));

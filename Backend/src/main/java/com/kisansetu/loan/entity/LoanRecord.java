@@ -45,8 +45,42 @@ public class LoanRecord {
     @Column(name = "disbursed_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal disbursedAmount;
 
+    @Column(name = "outstanding_amount", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal outstandingAmount = BigDecimal.ZERO;
+
     @Column(name = "interest_rate", nullable = false, precision = 5, scale = 2)
     private BigDecimal interestRate;
+
+    @Column(name = "loan_purpose", length = 100)
+    @Builder.Default
+    private String loanPurpose = "Crop Production";
+
+    @Column(name = "crop_season", length = 50)
+    @Builder.Default
+    private String cropSeason = "Kharif";
+
+    @Column(name = "crop_name", length = 100)
+    @Builder.Default
+    private String cropName = "Paddy";
+
+    @Column(name = "linked_khasra", length = 100)
+    private String linkedKhasra;
+
+    @Column(name = "subsidy_applied")
+    @Builder.Default
+    private Boolean subsidyApplied = false;
+
+    @Column(name = "subsidy_received")
+    @Builder.Default
+    private Boolean subsidyReceived = false;
+
+    @Column(name = "subsidy_amount_received", precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal subsidyAmountReceived = BigDecimal.ZERO;
+
+    @Column(name = "last_payment_date")
+    private LocalDate lastPaymentDate;
 
     @Column(name = "disbursement_date", nullable = false)
     private LocalDate disbursementDate;
@@ -58,6 +92,14 @@ public class LoanRecord {
     @Column(name = "repayment_status", nullable = false, length = 50)
     @Builder.Default
     private RepaymentStatus repaymentStatus = RepaymentStatus.ACTIVE;
+
+    @Column(name = "verification_status", length = 50)
+    @Builder.Default
+    private String verificationStatus = "PENDING";
+
+    @Column(name = "duplicate_flag")
+    @Builder.Default
+    private Boolean duplicateFlag = false;
 
     @Column(name = "created_at", updatable = false)
     @Builder.Default

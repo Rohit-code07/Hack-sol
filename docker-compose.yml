@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: kisansetu-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword123}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-kisansetu}
+      MYSQL_USER: ${MYSQL_USER:-kisansetu}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-kisansetu123}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - kisansetu_mysql_data:/var/lib/mysql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword123}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: kisansetu-ai-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - AI_SERVICE_KEY=${AI_SERVICE_KEY:-kisansetu-ai-internal-key-2024}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - LLM_PROVIDER=${LLM_PROVIDER:-gemini}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-sentence-transformers/all-mpnet-base-v2}
+      - CHROMA_PERSIST_DIRECTORY=/app/chroma_db
+      - DOCUMENT_STORAGE_DIRECTORY=/app/documents
+    volumes:
+      - ./ai-service/chroma_db:/app/chroma_db
+      - ./ai-service/documents:/app/documents
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/ai/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      - mysql
+
+volumes:
+  kisansetu_mysql_data:

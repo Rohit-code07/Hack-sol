@@ -41,9 +41,21 @@ public class LoanRecordRequest {
     @DecimalMin(value = "0.00", message = "Disbursed amount cannot be negative")
     private BigDecimal disbursedAmount;
 
+    private BigDecimal outstandingAmount;
+
     @NotNull(message = "Interest rate is required")
     @DecimalMin(value = "0.01", message = "Interest rate must be positive")
     private BigDecimal interestRate;
+
+    private String loanPurpose;
+    private String cropSeason;
+    private String cropName;
+    private String linkedKhasra;
+
+    private Boolean subsidyApplied;
+    private Boolean subsidyReceived;
+    private BigDecimal subsidyAmountReceived;
+    private LocalDate lastPaymentDate;
 
     @NotNull(message = "Disbursement date is required")
     private LocalDate disbursementDate;

@@ -26,6 +26,12 @@ public class LandRecord {
     @Column(name = "khasra_number", nullable = false, length = 50)
     private String khasraNumber;
 
+    @Column(name = "khata_number", length = 50)
+    private String khataNumber;
+
+    @Column(name = "survey_number", length = 50)
+    private String surveyNumber;
+
     @Column(nullable = false, length = 100)
     private String village;
 
@@ -44,6 +50,41 @@ public class LandRecord {
     @Column(name = "area_unit", nullable = false, length = 20)
     @Builder.Default
     private String areaUnit = "ACRE";
+
+    @Column(name = "owner_name", length = 150)
+    private String ownerName;
+
+    @Column(name = "co_owner_details", length = 255)
+    private String coOwnerDetails;
+
+    @Column(name = "irrigation_status", length = 50)
+    @Builder.Default
+    private String irrigationStatus = "UNIRRIGATED";
+
+    @Column(name = "land_usage", length = 100)
+    @Builder.Default
+    private String landUsage = "AGRICULTURAL";
+
+    @Column(name = "is_mortgaged")
+    @Builder.Default
+    private Boolean isMortgaged = false;
+
+    @Column(name = "is_collateral")
+    @Builder.Default
+    private Boolean isCollateral = false;
+
+    @Column(name = "verification_status", length = 50)
+    @Builder.Default
+    private String verificationStatus = "PENDING";
+
+    @Column(name = "verification_remarks", columnDefinition = "TEXT")
+    private String verificationRemarks;
+
+    @Column(name = "verified_at")
+    private LocalDateTime verifiedAt;
+
+    @Column(name = "verified_by_officer_id")
+    private Long verifiedByOfficerId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "ownership_status", nullable = false, length = 50)

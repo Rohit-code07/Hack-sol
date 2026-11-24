@@ -68,6 +68,12 @@ public class AuthService {
             throw new DuplicateResourceException("Username already taken: " + request.getUsername());
         }
 
+        if (request.getRole() == UserRole.FARMER && request.getMobileNumber() != null) {
+            if (farmerRepository.findByMobileNumber(request.getMobileNumber()).isPresent()) {
+                throw new DuplicateResourceException("Mobile number already registered: " + request.getMobileNumber());
+            }
+        }
+
         User user = User.builder()
                 .username(request.getUsername())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
@@ -79,18 +85,44 @@ public class AuthService {
 
         UUID farmerId = null;
         if (request.getRole() == UserRole.FARMER) {
-            String mobile = request.getMobileNumber() != null ? request.getMobileNumber() : "98270" + String.format("%05d", (int)(Math.random() * 100000));
+            String mobile = (request.getMobileNumber() != null && !request.getMobileNumber().isBlank())
+                    ? request.getMobileNumber() 
+                    : (request.getUsername() != null && request.getUsername().matches("^\\d{9,12}$") ? request.getUsername() : "98270" + String.format("%05d", (int)(Math.random() * 100000)));
+            String maskedAadhaar = null;
+            if (request.getAadhaarNumber() != null && !request.getAadhaarNumber().isBlank()) {
+                String digits = request.getAadhaarNumber().replaceAll("\\D", "");
+                maskedAadhaar = digits.length() >= 4 ? "XXXX-XXXX-" + digits.substring(digits.length() - 4) : "XXXX-XXXX-1234";
+            }
+
             Farmer farmer = Farmer.builder()
                     .user(user)
                     .farmerName(request.getFarmerName() != null ? request.getFarmerName() : request.getUsername())
+                    .fatherSpouseName(request.getFatherSpouseName())
+                    .dob(request.getDob())
+                    .gender(request.getGender() != null ? request.getGender() : "Male")
                     .mobileNumber(mobile)
+                    .alternateMobile(request.getAlternateMobile())
+                    .aadhaarNumber(maskedAadhaar)
+                    .category(request.getCategory() != null ? request.getCategory() : "General")
+                    .address(request.getAddress())
                     .village(request.getVillage() != null ? request.getVillage() : "Default Village")
                     .tehsil(request.getTehsil() != null ? request.getTehsil() : "Default Tehsil")
                     .district(request.getDistrict() != null ? request.getDistrict() : "Raipur")
                     .state(request.getState() != null ? request.getState() : "Chhattisgarh")
-                    .preferredLanguage("hi")
+                    .pinCode(request.getPinCode())
+                    .farmerType(request.getFarmerType() != null ? request.getFarmerType() : "Individual")
+                    .farmingType(request.getFarmingType() != null ? request.getFarmingType() : "Owner")
+                    .primaryCrop(request.getPrimaryCrop() != null ? request.getPrimaryCrop() : "Paddy")
+                    .secondaryCrops(request.getSecondaryCrops())
+                    .totalLandArea(request.getTotalLandArea() != null ? request.getTotalLandArea() : java.math.BigDecimal.ZERO)
+                    .irrigationAvailable(request.getIrrigationAvailable() != null ? request.getIrrigationAvailable() : false)
+                    .irrigationType(request.getIrrigationType() != null ? request.getIrrigationType() : "Rainfed")
+                    .soilType(request.getSoilType() != null ? request.getSoilType() : "Alluvial")
+                    .documentsJson(request.getDocumentsJson())
+                    .preferredLanguage(request.getPreferredLanguage() != null ? request.getPreferredLanguage() : "hi")
                     .build();
 
+            farmer.setProfileCompletionPercentage(farmer.calculateCompletionPercentage());
             farmer = farmerRepository.save(farmer);
             farmerId = farmer.getId();
         }

@@ -3,12 +3,15 @@ package com.kisansetu.grievance.controller;
 import com.kisansetu.common.response.ApiResponse;
 import com.kisansetu.grievance.dto.GrievanceGenerateRequest;
 import com.kisansetu.grievance.dto.GrievanceResponse;
+import com.kisansetu.grievance.dto.GrievanceStatusUpdateRequest;
+import com.kisansetu.grievance.dto.GrievanceSubmitRequest;
 import com.kisansetu.grievance.service.GrievanceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,10 +22,27 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/grievances")
 @RequiredArgsConstructor
-@Tag(name = "Grievance Management", description = "Deterministic and AI-assisted grievance drafting and PDF export")
+@Tag(name = "Grievance Management", description = "Deterministic and AI-assisted grievance drafting, submission, and PDF export")
 public class GrievanceController {
 
     private final GrievanceService grievanceService;
+
+    @PostMapping({"", "/submit"})
+    @Operation(summary = "Submit Farmer Grievance Directly")
+    public ResponseEntity<ApiResponse<GrievanceResponse>> submit(
+            @Valid @RequestBody GrievanceSubmitRequest request) {
+        GrievanceResponse response = grievanceService.submitGrievance(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(response, "Grievance registered successfully"));
+    }
+
+    @PutMapping("/{id}/status")
+    @Operation(summary = "Update Grievance Status & Officer Remarks")
+    public ResponseEntity<ApiResponse<GrievanceResponse>> updateStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody GrievanceStatusUpdateRequest request) {
+        GrievanceResponse response = grievanceService.updateGrievanceStatus(id, request);
+        return ResponseEntity.ok(ApiResponse.success(response, "Grievance status updated successfully"));
+    }
 
     @PostMapping("/generate")
     @Operation(summary = "Generate Grievance from Discrepancy",
@@ -44,6 +64,13 @@ public class GrievanceController {
     @Operation(summary = "Get All Grievances for a Farmer")
     public ResponseEntity<ApiResponse<List<GrievanceResponse>>> getByFarmer(@PathVariable UUID farmerId) {
         List<GrievanceResponse> responses = grievanceService.getByFarmer(farmerId);
+        return ResponseEntity.ok(ApiResponse.success(responses));
+    }
+
+    @GetMapping("/all")
+    @Operation(summary = "Get All System Grievances for Administrative / Bank Review")
+    public ResponseEntity<ApiResponse<List<GrievanceResponse>>> getAll() {
+        List<GrievanceResponse> responses = grievanceService.getAllGrievances();
         return ResponseEntity.ok(ApiResponse.success(responses));
     }
 

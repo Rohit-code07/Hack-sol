@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -17,10 +17,14 @@ import {
   Calendar,
   ShieldCheck,
   Building2,
+  AlertCircle,
+  Check,
+  UserCheck,
 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import useAsync from '../../hooks/useAsync';
 import useDiscrepancies from '../../hooks/useDiscrepancies';
+import farmerApi from '../../api/farmerApi';
 import { getMe } from '../../services/farmerService';
 import { getEntitlements } from '../../services/entitlementService';
 import { formatCurrency } from '../../utils/formatters';
@@ -34,6 +38,8 @@ import Button from '../../components/common/Button';
 import TermHint from '../../components/common/TermHint';
 import ErrorState from '../../components/common/ErrorState';
 import Skeleton from '../../components/common/Skeleton';
+import Modal from '../../components/common/Modal';
+import Field from '../../components/common/Field';
 import AlertRibbon from '../../components/feedback/AlertRibbon';
 import CountUp from '../../components/motion/CountUp';
 import useReducedMotion from '../../hooks/useReducedMotion';
@@ -54,28 +60,130 @@ export default function FarmerDashboard() {
   const prefersReducedMotion = useReducedMotion();
   useDocumentTitle('farmer.dashboard', 'Farmer Overview');
 
-  const fetchProfile = useCallback(() => getMe(farmerId || 'FRM-0003'), [farmerId]);
-  const fetchEntitlementsData = useCallback(() => getEntitlements(farmerId || 'FRM-0003'), [farmerId]);
+  const fetchProfile = useCallback(() => farmerId ? getMe(farmerId) : Promise.resolve({ success: true, data: null }), [farmerId]);
+  const fetchEntitlementsData = useCallback(() => farmerId ? getEntitlements(farmerId) : Promise.resolve({ success: true, data: [] }), [farmerId]);
 
   const {
     data: farmer,
     loading: farmerLoading,
     error: farmerError,
     retry: retryProfile,
-  } = useAsync(fetchProfile, true, [farmerId]);
+  } = useAsync(fetchProfile, Boolean(farmerId), [farmerId]);
 
   const {
     data: entitlements,
     loading: entLoading,
     error: entError,
     retry: retryEntitlements,
-  } = useAsync(fetchEntitlementsData, true, [farmerId]);
+  } = useAsync(fetchEntitlementsData, Boolean(farmerId), [farmerId]);
 
   const {
     openDiscrepancies,
     hasDiscrepancies,
     loading: discLoading,
-  } = useDiscrepancies(farmerId || 'FRM-0003');
+  } = useDiscrepancies(farmerId);
+
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileMsg, setProfileMsg] = useState({ text: '', type: '' });
+
+  const [profileForm, setProfileForm] = useState({
+    farmerName: '',
+    fatherSpouseName: '',
+    dob: '',
+    gender: 'Male',
+    alternateMobile: '',
+    aadhaarNumber: '',
+    category: 'General',
+    address: '',
+    village: '',
+    tehsil: '',
+    district: '',
+    state: 'Chhattisgarh',
+    pinCode: '',
+    farmerType: 'Individual',
+    farmingType: 'Owner',
+    primaryCrop: 'Paddy',
+    secondaryCrops: '',
+    totalLandArea: '3.5',
+    irrigationAvailable: true,
+    irrigationType: 'Canal',
+    soilType: 'Alluvial',
+    documentsJson: '',
+  });
+
+  const [docChecklist, setDocChecklist] = useState({
+    aadhaar: true,
+    khasra: true,
+    passbook: true,
+    cropCert: false,
+  });
+
+  useEffect(() => {
+    if (farmer) {
+      setProfileForm({
+        farmerName: farmer.name || farmer.farmerName || '',
+        fatherSpouseName: farmer.fatherSpouseName || farmer.fatherName || '',
+        dob: farmer.dob || '',
+        gender: farmer.gender || 'Male',
+        alternateMobile: farmer.alternateMobile || '',
+        aadhaarNumber: farmer.aadhaarNumber || '',
+        category: farmer.category || 'General',
+        address: farmer.address || '',
+        village: farmer.village || '',
+        tehsil: farmer.tehsil || '',
+        district: farmer.district || '',
+        state: farmer.state || 'Chhattisgarh',
+        pinCode: farmer.pinCode || '',
+        farmerType: farmer.farmerType || 'Individual',
+        farmingType: farmer.farmingType || 'Owner',
+        primaryCrop: farmer.primaryCrop || 'Paddy',
+        secondaryCrops: farmer.secondaryCrops || '',
+        totalLandArea: String(farmer.totalLandArea || '3.5'),
+        irrigationAvailable: Boolean(farmer.irrigationAvailable),
+        irrigationType: farmer.irrigationType || 'Canal',
+        soilType: farmer.soilType || 'Alluvial',
+        documentsJson: farmer.documentsJson || '',
+      });
+
+      if (farmer.documentsJson) {
+        try {
+          const parsed = typeof farmer.documentsJson === 'string' ? JSON.parse(farmer.documentsJson) : farmer.documentsJson;
+          if (parsed && typeof parsed === 'object') {
+            setDocChecklist((prev) => ({ ...prev, ...parsed }));
+          }
+        } catch {}
+      }
+    }
+  }, [farmer]);
+
+  const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    if (!farmerId) return;
+    setIsSavingProfile(true);
+    setProfileMsg({ text: '', type: '' });
+    try {
+      const payload = {
+        ...profileForm,
+        mobileNumber: farmer?.mobileNumber || farmer?.mobile || farmer?.phone || '',
+        totalLandArea: Number(profileForm.totalLandArea) || 0,
+        documentsJson: JSON.stringify(docChecklist),
+      };
+      const res = await farmerApi.updateProfile(farmerId, payload);
+      if (res?.success) {
+        setProfileMsg({ text: isEn ? 'Farmer profile successfully updated in registry!' : 'किसान प्रोफ़ाइल सफलतापूर्वक अद्यतन की गई!', type: 'success' });
+        setTimeout(() => {
+          setIsProfileModalOpen(false);
+          setProfileMsg({ text: '', type: '' });
+          retryProfile();
+        }, 1200);
+      }
+    } catch (err) {
+      setProfileMsg({ text: err?.response?.data?.message || err?.message || 'Error updating profile', type: 'error' });
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   const isLoading = farmerLoading || entLoading || discLoading;
 
@@ -133,15 +241,25 @@ export default function FarmerDashboard() {
       {/* Page Header */}
       <PageHeader
         eyebrow={t('farmer.greeting', 'Welcome, Farmer')}
-        title={farmer?.name || 'Ramesh Kumar'}
-        subtitle={`${farmer?.village || 'Chandrapur Khurd'}, ${farmer?.district || 'Wardha'}`}
+        title={farmer?.name || (isEn ? 'Farmer Dashboard' : 'किसान डैशबोर्ड')}
+        subtitle={farmer?.village ? `${farmer.village}, ${farmer.district}` : (isEn ? 'Digital Land & Entitlement Registry' : 'डिजिटल भूमि एवं हक खाता')}
         actions={
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-xs font-bold text-indigo-900 bg-paper-100 border border-paper-200 px-2.5 py-1.5 rounded-sm">
-              {farmer?.id || 'FRM-0003'}
-            </span>
-            <Stamp status={farmer?.status || 'ACTIVE'} size="md" />
-          </div>
+          farmer?.id ? (
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs font-bold text-indigo-900 bg-paper-100 border border-paper-200 px-2.5 py-1.5 rounded-sm">
+                {farmer.id}
+              </span>
+              <Stamp status={farmer?.status || 'ACTIVE'} size="md" />
+              <Button
+                variant="secondary"
+                size="sm"
+                icon={<UserCheck className="w-4 h-4" />}
+                onClick={() => setIsProfileModalOpen(true)}
+              >
+                {isEn ? 'Edit Profile' : 'विवरण सुधारें'}
+              </Button>
+            </div>
+          ) : null
         }
       />
 
@@ -694,6 +812,310 @@ export default function FarmerDashboard() {
               </div>
             </div>
           </div>
+
+          {/* Farmer Profile Comprehensive Update Modal */}
+          <Modal
+            isOpen={isProfileModalOpen}
+            onClose={() => setIsProfileModalOpen(false)}
+            title={isEn ? 'Update Farmer Profile & Agricultural Demographics' : 'किसान प्रोफ़ाइल एवं कृषि जनसांख्यिकी अद्यतन'}
+            maxWidth="max-w-3xl"
+          >
+            <form onSubmit={handleUpdateProfile} className="space-y-4">
+              <div className="p-3 bg-paper-100 border border-paper-200 rounded-sm text-xs text-ink-muted leading-relaxed">
+                {isEn
+                  ? 'Keep your personal and agricultural details accurate to ensure seamless verification for KCC loans, MSP procurement, and PMFBY claims.'
+                  : 'केसीसी ऋण, न्यूनतम समर्थन मूल्य (MSP) और फसल बीमा दावों में सुगम सत्यापन हेतु अपने व्यक्तिगत व कृषि विवरण अद्यतन रखें।'}
+              </div>
+
+              {profileMsg.text && (
+                <div className={`p-3 rounded-sm text-xs font-bold flex items-center gap-2 animate-slide-down ${profileMsg.type === 'error' ? 'bg-rust-100 text-rust-700 border border-rust-600' : 'bg-sage-100 text-sage-800 border border-sage-600'}`}>
+                  {profileMsg.type === 'error' ? <AlertCircle className="w-4 h-4 shrink-0" /> : <Check className="w-4 h-4 shrink-0" />}
+                  <span>{profileMsg.text}</span>
+                </div>
+              )}
+
+              {/* Personal Details */}
+              <div className="border-b border-paper-200 pb-2">
+                <span className="text-xs font-bold font-serif text-indigo-950 uppercase tracking-wider">
+                  {isEn ? '1. Personal Information' : '१. व्यक्तिगत विवरण'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field
+                  id="fp-name"
+                  label={isEn ? 'Full Name' : 'पूरा नाम'}
+                  value={profileForm.farmerName}
+                  onChange={(e) => setProfileForm({ ...profileForm, farmerName: e.target.value })}
+                  required
+                />
+                <Field
+                  id="fp-father"
+                  label={isEn ? "Father's / Spouse's Name" : 'पिता / पति का नाम'}
+                  value={profileForm.fatherSpouseName}
+                  onChange={(e) => setProfileForm({ ...profileForm, fatherSpouseName: e.target.value })}
+                  placeholder="e.g. Ramprasad"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Field
+                  id="fp-dob"
+                  type="date"
+                  label={isEn ? 'Date of Birth' : 'जन्म तिथि'}
+                  value={profileForm.dob}
+                  onChange={(e) => setProfileForm({ ...profileForm, dob: e.target.value })}
+                />
+                <Field
+                  id="fp-gender"
+                  type="select"
+                  label={isEn ? 'Gender' : 'लिंग'}
+                  value={profileForm.gender}
+                  onChange={(e) => setProfileForm({ ...profileForm, gender: e.target.value })}
+                  options={[
+                    { value: 'Male', label: isEn ? 'Male (पुरुष)' : 'पुरुष' },
+                    { value: 'Female', label: isEn ? 'Female (महिला)' : 'महिला' },
+                    { value: 'Other', label: isEn ? 'Other (अन्य)' : 'अन्य' },
+                  ]}
+                />
+                <Field
+                  id="fp-cat"
+                  type="select"
+                  label={isEn ? 'Social Category' : 'सामाजिक श्रेणी'}
+                  value={profileForm.category}
+                  onChange={(e) => setProfileForm({ ...profileForm, category: e.target.value })}
+                  options={[
+                    { value: 'General', label: 'General (सामान्य)' },
+                    { value: 'OBC', label: 'OBC (अन्य पिछड़ा वर्ग)' },
+                    { value: 'SC', label: 'SC (अनुसूचित जाति)' },
+                    { value: 'ST', label: 'ST (अनुसूचित जनजाति)' },
+                  ]}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field
+                  id="fp-alt-mob"
+                  label={isEn ? 'Alternate Mobile' : 'वैकल्पिक मोबाइल'}
+                  value={profileForm.alternateMobile}
+                  onChange={(e) => setProfileForm({ ...profileForm, alternateMobile: e.target.value })}
+                  placeholder="98230XXXXX"
+                />
+                <Field
+                  id="fp-aadhaar"
+                  label={isEn ? 'Aadhaar (Masked)' : 'आधार क्रमांक (सुरक्षित)'}
+                  value={profileForm.aadhaarNumber}
+                  onChange={(e) => setProfileForm({ ...profileForm, aadhaarNumber: e.target.value })}
+                  placeholder="XXXX-XXXX-1234"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                <Field
+                  id="fp-village"
+                  label={isEn ? 'Village' : 'ग्राम'}
+                  value={profileForm.village}
+                  onChange={(e) => setProfileForm({ ...profileForm, village: e.target.value })}
+                  placeholder="Arang"
+                />
+                <Field
+                  id="fp-tehsil"
+                  label={isEn ? 'Tehsil / Block' : 'तहसील / विकासखंड'}
+                  value={profileForm.tehsil}
+                  onChange={(e) => setProfileForm({ ...profileForm, tehsil: e.target.value })}
+                  placeholder="Arang"
+                />
+                <Field
+                  id="fp-district"
+                  label={isEn ? 'District' : 'जिला'}
+                  value={profileForm.district}
+                  onChange={(e) => setProfileForm({ ...profileForm, district: e.target.value })}
+                  placeholder="Raipur"
+                />
+                <Field
+                  id="fp-state"
+                  label={isEn ? 'State' : 'राज्य'}
+                  value={profileForm.state}
+                  onChange={(e) => setProfileForm({ ...profileForm, state: e.target.value })}
+                  placeholder="Chhattisgarh"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2">
+                  <Field
+                    id="fp-address"
+                    label={isEn ? 'Full Street / Postal Address' : 'पूरा पता / मोहल्ला'}
+                    value={profileForm.address}
+                    onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                    placeholder="Ward No. 4, Main Road, Arang"
+                  />
+                </div>
+                <Field
+                  id="fp-pincode"
+                  label={isEn ? 'PIN Code' : 'पिन कोड'}
+                  value={profileForm.pinCode}
+                  onChange={(e) => setProfileForm({ ...profileForm, pinCode: e.target.value })}
+                  placeholder="493441"
+                />
+              </div>
+
+              {/* Agricultural Demographics */}
+              <div className="border-b border-paper-200 pb-2 pt-2">
+                <span className="text-xs font-bold font-serif text-indigo-950 uppercase tracking-wider">
+                  {isEn ? '2. Agricultural Land & Farming Profile' : '२. कृषि भूमि एवं खेती विवरण'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Field
+                  id="fp-farmer-type"
+                  type="select"
+                  label={isEn ? 'Farmer Scale' : 'कृषक श्रेणी'}
+                  value={profileForm.farmerType}
+                  onChange={(e) => setProfileForm({ ...profileForm, farmerType: e.target.value })}
+                  options={[
+                    { value: 'Marginal', label: isEn ? 'Marginal (< 1 ha)' : 'सीमांत कृषक (< 1 हे.)' },
+                    { value: 'Small', label: isEn ? 'Small (1 - 2 ha)' : 'लघु कृषक (1 - 2 हे.)' },
+                    { value: 'Medium', label: isEn ? 'Medium / Large' : 'मध्यम / बड़े कृषक' },
+                    { value: 'Individual', label: 'Individual Farmer' },
+                  ]}
+                />
+                <Field
+                  id="fp-farming-type"
+                  type="select"
+                  label={isEn ? 'Tenure Status' : 'काश्तकारी प्रकार'}
+                  value={profileForm.farmingType}
+                  onChange={(e) => setProfileForm({ ...profileForm, farmingType: e.target.value })}
+                  options={[
+                    { value: 'Owner', label: isEn ? 'Land Owner (भू-स्वामी)' : 'स्वयं काश्त (भू-स्वामी)' },
+                    { value: 'Tenant', label: isEn ? 'Tenant (बटाईदार)' : 'बटाईदार / पट्टेदार' },
+                    { value: 'Sharecropper', label: isEn ? 'Sharecropper' : 'हिस्सेदार' },
+                  ]}
+                />
+                <Field
+                  id="fp-total-land"
+                  type="number"
+                  step="0.01"
+                  label={isEn ? 'Total Land (Acres)' : 'कुल कृषि रकबा (एकड़)'}
+                  value={profileForm.totalLandArea}
+                  onChange={(e) => setProfileForm({ ...profileForm, totalLandArea: e.target.value })}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field
+                  id="fp-crop"
+                  label={isEn ? 'Primary Crop' : 'मुख्य फसल'}
+                  value={profileForm.primaryCrop}
+                  onChange={(e) => setProfileForm({ ...profileForm, primaryCrop: e.target.value })}
+                  placeholder="Paddy"
+                />
+                <Field
+                  id="fp-sec-crop"
+                  label={isEn ? 'Secondary Crops' : 'द्वितीयक फसलें'}
+                  value={profileForm.secondaryCrops}
+                  onChange={(e) => setProfileForm({ ...profileForm, secondaryCrops: e.target.value })}
+                  placeholder="Wheat, Gram, Mustard"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <Field
+                  id="fp-irrig-avail"
+                  type="select"
+                  label={isEn ? 'Irrigation Facility' : 'सिंचाई उपलब्धता'}
+                  value={profileForm.irrigationAvailable ? 'true' : 'false'}
+                  onChange={(e) => setProfileForm({ ...profileForm, irrigationAvailable: e.target.value === 'true' })}
+                  options={[
+                    { value: 'true', label: isEn ? 'Irrigated (सिंचित)' : 'सिंचित भूमि' },
+                    { value: 'false', label: isEn ? 'Rainfed / Unirrigated' : 'असिंचित (वर्षा आधारित)' },
+                  ]}
+                />
+                <Field
+                  id="fp-irrigation-type"
+                  type="select"
+                  label={isEn ? 'Irrigation System' : 'सिंचाई व्यवस्था'}
+                  value={profileForm.irrigationType}
+                  onChange={(e) => setProfileForm({ ...profileForm, irrigationType: e.target.value })}
+                  options={[
+                    { value: 'Canal', label: isEn ? 'Canal / River' : 'नहर / नदी' },
+                    { value: 'Tube Well', label: isEn ? 'Tube Well / Bore' : 'नलकूप / बोर' },
+                    { value: 'Rainfed', label: isEn ? 'Rainfed (वर्षा आधारित)' : 'वर्षा आधारित' },
+                    { value: 'Drip', label: isEn ? 'Drip / Micro-Irrigation' : 'ड्रिप / सूक्ष्म सिंचाई' },
+                  ]}
+                />
+                <Field
+                  id="fp-soil"
+                  type="select"
+                  label={isEn ? 'Soil Type' : 'मृदा का प्रकार'}
+                  value={profileForm.soilType}
+                  onChange={(e) => setProfileForm({ ...profileForm, soilType: e.target.value })}
+                  options={[
+                    { value: 'Alluvial', label: isEn ? 'Alluvial (जलोढ़)' : 'जलोढ़ मिट्टी' },
+                    { value: 'Black (Regur)', label: isEn ? 'Black Cotton (काली)' : 'काली मिट्टी' },
+                    { value: 'Red & Yellow', label: isEn ? 'Red & Yellow (लाल-पीली)' : 'लाल-पीली मिट्टी' },
+                    { value: 'Clay Loam', label: isEn ? 'Clay Loam (दोमट)' : 'दोमट मिट्टी' },
+                  ]}
+                />
+              </div>
+
+              {/* Supporting Documents Checklist */}
+              <div className="border-b border-paper-200 pb-2 pt-2">
+                <span className="text-xs font-bold font-serif text-indigo-950 uppercase tracking-wider">
+                  {isEn ? '3. Verification Documents Checklist' : '३. सहायक दस्तावेज सत्यापन स्थिति'}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs bg-paper-100 p-3 rounded-sm border border-paper-200">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={docChecklist.aadhaar}
+                    onChange={(e) => setDocChecklist({ ...docChecklist, aadhaar: e.target.checked })}
+                    className="accent-indigo-900 w-4 h-4 rounded"
+                  />
+                  <span>{isEn ? 'Aadhaar Card Copy (आधार कार्ड)' : 'आधार कार्ड प्रतिलिपि'}</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={docChecklist.khasra}
+                    onChange={(e) => setDocChecklist({ ...docChecklist, khasra: e.target.checked })}
+                    className="accent-indigo-900 w-4 h-4 rounded"
+                  />
+                  <span>{isEn ? 'B-1 / Khasra Document (खसरा बी-1)' : 'खसरा बी-1 भू-अभिलेख'}</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={docChecklist.passbook}
+                    onChange={(e) => setDocChecklist({ ...docChecklist, passbook: e.target.checked })}
+                    className="accent-indigo-900 w-4 h-4 rounded"
+                  />
+                  <span>{isEn ? 'Bank Passbook / Cancelled Cheque' : 'बैंक पासबुक / चेक प्रति'}</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={docChecklist.cropCert}
+                    onChange={(e) => setDocChecklist({ ...docChecklist, cropCert: e.target.checked })}
+                    className="accent-indigo-900 w-4 h-4 rounded"
+                  />
+                  <span>{isEn ? 'Crop Sowing Report (गिरदावरी रिपोर्ट)' : 'फसल गिरदावरी रिपोर्ट'}</span>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-paper-200">
+                <Button type="button" variant="outline" onClick={() => setIsProfileModalOpen(false)}>
+                  {isEn ? 'Cancel' : 'रद्द करें'}
+                </Button>
+                <Button type="submit" variant="primary" disabled={isSavingProfile}>
+                  {isSavingProfile ? (isEn ? 'Updating...' : 'अद्यतन किया जा रहा है...') : (isEn ? 'Save Profile Details' : 'विवरण सुरक्षित करें')}
+                </Button>
+              </div>
+            </form>
+          </Modal>
         </>
       )}
     </div>

@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { CreditCard, AlertOctagon, CheckCircle2, ChevronRight } from 'lucide-react';
+import { CreditCard, AlertOctagon, CheckCircle2, ChevronRight, PlusCircle, AlertTriangle, ShieldAlert, Check } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import useAsync from '../../hooks/useAsync';
+import loanApi from '../../api/loanApi';
 import { getFarmerLoans } from '../../services/farmerService';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
@@ -12,9 +13,12 @@ import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 import Tabs from '../../components/common/Tabs';
 import Stamp from '../../components/common/Stamp';
+import Button from '../../components/common/Button';
 import TermHint from '../../components/common/TermHint';
 import ErrorState from '../../components/common/ErrorState';
 import CountUp from '../../components/motion/CountUp';
+import Modal from '../../components/common/Modal';
+import Field from '../../components/common/Field';
 
 /**
  * Farmer Loan Ledger Page displaying institutional credit accounts, NPA status, and limits.
@@ -26,9 +30,91 @@ export default function LoanLedgerPage() {
   useDocumentTitle('loans.title', 'Farmer Credit Ledger');
 
   const [activeTab, setActiveTab] = useState('ALL');
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [formSuccess, setFormSuccess] = useState('');
 
-  const fetchLoans = useCallback(() => getFarmerLoans(farmerId || 'FRM-0003'), [farmerId]);
-  const { data: loansData, loading, error, retry } = useAsync(fetchLoans, true, [farmerId]);
+  const [formData, setFormData] = useState({
+    bankId: 1,
+    bankName: 'State Bank of India',
+    branchName: 'Raipur Main Branch',
+    loanType: 'KCC_CROP_LOAN',
+    loanAccountReference: '',
+    sanctionedAmount: '',
+    disbursedAmount: '',
+    interestRate: '7.0',
+    linkedKhasra: '',
+    cropSeason: 'Kharif',
+    cropName: 'Paddy',
+    sanctionDate: new Date().toISOString().slice(0, 10),
+    maturityDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+  });
+
+  const handleCreateLoan = async (e) => {
+    e.preventDefault();
+    setFormError('');
+    setFormSuccess('');
+
+    if (!formData.sanctionedAmount || Number(formData.sanctionedAmount) <= 0) {
+      setFormError(isEn ? 'Please enter valid sanctioned loan amount.' : 'कृपया मान्य स्वीकृत ऋण राशि दर्ज करें।');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        farmerId: farmerId,
+        bankId: Number(formData.bankId) || 1,
+        loanAccountReference: formData.loanAccountReference.trim() || `KCC-${Date.now()}`,
+        loanType: formData.loanType,
+        sanctionedAmount: Number(formData.sanctionedAmount),
+        disbursedAmount: Number(formData.disbursedAmount || formData.sanctionedAmount),
+        interestRate: Number(formData.interestRate || 7.0),
+        disbursementDate: formData.sanctionDate,
+        maturityDate: formData.maturityDate,
+        linkedKhasra: formData.linkedKhasra.trim() || null,
+        cropSeason: formData.cropSeason,
+        cropName: formData.cropName,
+      };
+
+      const res = await loanApi.create(payload);
+      if (res?.success) {
+        if (res.data?.duplicateFlag) {
+          setFormSuccess(isEn ? 'Loan recorded! ⚠ Potential duplicate financing flagged against Demo Registry.' : 'ऋण दर्ज! ⚠ डेमो रजिस्ट्री के विरुद्ध संभावित दोहरा ऋण चिह्नित किया गया।');
+        } else {
+          setFormSuccess(isEn ? 'Loan registered successfully and verified!' : 'ऋण सफलतापूर्वक पंजीकृत एवं सत्यापित!');
+        }
+        setTimeout(() => {
+          setIsAddModalOpen(false);
+          setFormSuccess('');
+          setFormData({
+            bankId: 1,
+            bankName: 'State Bank of India',
+            branchName: 'Raipur Main Branch',
+            loanType: 'KCC_CROP_LOAN',
+            loanAccountReference: '',
+            sanctionedAmount: '',
+            disbursedAmount: '',
+            interestRate: '7.0',
+            linkedKhasra: '',
+            cropSeason: 'Kharif',
+            cropName: 'Paddy',
+            sanctionDate: new Date().toISOString().slice(0, 10),
+            maturityDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+          });
+          retry();
+        }, 1400);
+      }
+    } catch (err) {
+      setFormError(err?.response?.data?.message || err?.message || (isEn ? 'Failed to register loan' : 'ऋण दर्ज करने में त्रुटि'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const fetchLoans = useCallback(() => farmerId ? getFarmerLoans(farmerId) : Promise.resolve({ success: true, data: [] }), [farmerId]);
+  const { data: loansData, loading, error, retry } = useAsync(fetchLoans, Boolean(farmerId), [farmerId]);
 
   const list = Array.isArray(loansData) ? loansData : [];
 
@@ -119,9 +205,27 @@ export default function LoanLedgerPage() {
         header: t('loans.disbursed', 'Disbursement Date'),
         render: (loan) => (
           <span className="text-xs text-ink-muted tabular-nums">
-            {formatDate(loan.disbursedOn, i18n.language)}
+            {formatDate(loan.disbursedOn || loan.disbursementDate, i18n.language)}
           </span>
         ),
+      },
+      {
+        key: 'verification',
+        header: isEn ? 'Duplicate Check' : 'दोहरा ऋण जांच',
+        render: (loan) => {
+          const isDup = loan.duplicateFlag || loan.verificationStatus === 'FLAGGED_DUPLICATE';
+          return isDup ? (
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-xs bg-rust-100 text-rust-700 border border-rust-600">
+              <AlertTriangle className="w-3 h-3 text-rust-600" />
+              {isEn ? 'Duplicate Financing Flag' : 'दोहरा ऋण चिह्नित'}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-xs bg-sage-100 text-sage-800 border border-sage-600">
+              <CheckCircle2 className="w-3 h-3 text-sage-700" />
+              {isEn ? 'Verified Single Credit' : 'एकल साख सत्यापित'}
+            </span>
+          );
+        },
       },
     ],
     [t, i18n.language]
@@ -142,6 +246,15 @@ export default function LoanLedgerPage() {
         eyebrow={isEn ? 'Institutional Credit Accounts' : 'संस्थागत ऋण एवं साख बही'}
         title={isEn ? 'Farmer Credit Ledger' : 'किसान ऋण बही'}
         subtitle={isEn ? 'Live tracking of sanctioned limits, outstanding balances, and repayment standing.' : 'स्वीकृत सीमा, वर्तमान बकाया राशि और अदायगी स्थिति का प्रत्यक्ष विवरण।'}
+        actions={
+          <Button
+            variant="primary"
+            icon={<PlusCircle className="w-4 h-4" />}
+            onClick={() => setIsAddModalOpen(true)}
+          >
+            {isEn ? 'Register Loan Account' : 'नया ऋण दर्ज करें'}
+          </Button>
+        }
       />
 
       {/* Summary KPI Cards with CountUp (M3.3) */}
@@ -379,6 +492,184 @@ export default function LoanLedgerPage() {
           </div>
         </div>
       </div>
+
+      {/* Register Agricultural Loan Modal */}
+      <Modal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        title={isEn ? 'Register Agricultural Loan Account' : 'कृषि ऋण खाता दर्ज करें'}
+        maxWidth="max-w-2xl"
+      >
+        <form onSubmit={handleCreateLoan} className="space-y-4">
+          <div className="p-3 bg-paper-100 border border-paper-200 rounded-sm text-xs text-ink-muted leading-relaxed">
+            {isEn
+              ? 'Entered loan details will be checked against the Demo Synthetic Loan Registry. If the linked khasra is already pledged to another bank, an automatic Duplicate Financing Warning will be flagged.'
+              : 'दर्ज किया गया ऋण विवरण डेमो साख रजिस्ट्री से परखा जाएगा। यदि संबंधित खसरा किसी अन्य बैंक में पहले से बंधक है, तो स्वतः दोहरा ऋण जोखिम (Duplicate Financing) का अलर्ट जारी होगा।'}
+          </div>
+
+          {formError && (
+            <div className="p-3 bg-rust-100 border border-rust-600 rounded-sm text-xs text-rust-700 flex items-center gap-2 font-bold animate-slide-down">
+              <AlertOctagon className="w-4 h-4 shrink-0" />
+              <span>{formError}</span>
+            </div>
+          )}
+
+          {formSuccess && (
+            <div className="p-3 bg-sage-100 border border-sage-600 rounded-sm text-xs text-sage-800 flex items-center gap-2 font-bold animate-slide-down">
+              <Check className="w-4 h-4 shrink-0" />
+              <span>{formSuccess}</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field
+              id="ln-bank"
+              type="select"
+              label={isEn ? 'Financing Bank' : 'ऋणदाता बैंक'}
+              value={formData.bankName}
+              onChange={(e) => {
+                const bName = e.target.value;
+                const bId = bName.includes('Gramin') ? 2 : bName.includes('Maharashtra') ? 3 : 1;
+                setFormData({ ...formData, bankName: bName, bankId: bId });
+              }}
+              options={[
+                { value: 'State Bank of India', label: 'State Bank of India (भारतीय स्टेट बैंक)' },
+                { value: 'Chhattisgarh Rajya Gramin Bank', label: 'Chhattisgarh Rajya Gramin Bank (ग्रामीण बैंक)' },
+                { value: 'Bank of Maharashtra', label: 'Bank of Maharashtra' },
+                { value: 'Punjab National Bank', label: 'Punjab National Bank' },
+              ]}
+              required
+            />
+            <Field
+              id="ln-branch"
+              label={isEn ? 'Branch Name' : 'शाखा का नाम'}
+              value={formData.branchName}
+              onChange={(e) => setFormData({ ...formData, branchName: e.target.value })}
+              placeholder="e.g. Raipur Main Branch"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field
+              id="ln-account-ref"
+              label={isEn ? 'Loan Account No. / Reference' : 'ऋण खाता क्रमांक'}
+              value={formData.loanAccountReference}
+              onChange={(e) => setFormData({ ...formData, loanAccountReference: e.target.value })}
+              placeholder="e.g. KCC-SBI-2024-9901"
+              required
+            />
+            <Field
+              id="ln-type"
+              type="select"
+              label={isEn ? 'Facility Type' : 'ऋण प्रकार'}
+              value={formData.loanType}
+              onChange={(e) => setFormData({ ...formData, loanType: e.target.value })}
+              options={[
+                { value: 'KCC_CROP_LOAN', label: isEn ? 'Kisan Credit Card (KCC) Crop Loan' : 'किसान क्रेडिट कार्ड (KCC) फसली ऋण' },
+                { value: 'TERM_LOAN', label: isEn ? 'Agricultural Term Loan (मशीनरी/सिंचाई)' : 'कृषि सावधि ऋण (Term Loan)' },
+                { value: 'TRACTOR_LOAN', label: isEn ? 'Farm Mechanization Loan' : 'कृषि यंत्रीकरण ऋण' },
+              ]}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Field
+              id="ln-sanctioned"
+              type="number"
+              min="1000"
+              step="500"
+              label={isEn ? 'Sanctioned Limit (₹)' : 'स्वीकृत सीमा (₹)'}
+              value={formData.sanctionedAmount}
+              onChange={(e) => setFormData({ ...formData, sanctionedAmount: e.target.value })}
+              placeholder="150000"
+              required
+            />
+            <Field
+              id="ln-disbursed"
+              type="number"
+              min="1000"
+              step="500"
+              label={isEn ? 'Disbursed Amount (₹)' : 'संवितरित राशि (₹)'}
+              value={formData.disbursedAmount}
+              onChange={(e) => setFormData({ ...formData, disbursedAmount: e.target.value })}
+              placeholder="150000"
+            />
+            <Field
+              id="ln-interest"
+              type="number"
+              step="0.1"
+              label={isEn ? 'Interest Rate (% p.a.)' : 'ब्याज दर (% प्रति वर्ष)'}
+              value={formData.interestRate}
+              onChange={(e) => setFormData({ ...formData, interestRate: e.target.value })}
+              placeholder="7.0"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <Field
+              id="ln-khasra"
+              label={isEn ? 'Linked Pledged Khasra' : 'संबद्ध गिरवी खसरा'}
+              value={formData.linkedKhasra}
+              onChange={(e) => setFormData({ ...formData, linkedKhasra: e.target.value })}
+              placeholder="e.g. 142/2 or 205/4"
+              hint={isEn ? 'Cross-checked against existing mortgage registry' : 'अन्य बैंकों में बंधक की जांच हेतु'}
+            />
+            <Field
+              id="ln-season"
+              type="select"
+              label={isEn ? 'Crop Season' : 'फसल चक्र'}
+              value={formData.cropSeason}
+              onChange={(e) => setFormData({ ...formData, cropSeason: e.target.value })}
+              options={[
+                { value: 'Kharif', label: isEn ? 'Kharif (खरीफ)' : 'खरीफ' },
+                { value: 'Rabi', label: isEn ? 'Rabi (रबी)' : 'रबी' },
+                { value: 'Zaid', label: isEn ? 'Zaid (जायद)' : 'जायद' },
+              ]}
+            />
+            <Field
+              id="ln-crop"
+              label={isEn ? 'Crop Name' : 'फसल'}
+              value={formData.cropName}
+              onChange={(e) => setFormData({ ...formData, cropName: e.target.value })}
+              placeholder="Paddy"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Field
+              id="ln-date-disb"
+              type="date"
+              label={isEn ? 'Sanction / Disbursement Date' : 'स्वीकृति / संवितरण तिथि'}
+              value={formData.sanctionDate}
+              onChange={(e) => setFormData({ ...formData, sanctionDate: e.target.value })}
+            />
+            <Field
+              id="ln-date-mat"
+              type="date"
+              label={isEn ? 'Repayment Due Date' : 'पुनर्भुगतान नियत तिथि'}
+              value={formData.maturityDate}
+              onChange={(e) => setFormData({ ...formData, maturityDate: e.target.value })}
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-paper-200">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsAddModalOpen(false)}
+            >
+              {isEn ? 'Cancel' : 'रद्द करें'}
+            </Button>
+            <Button
+              type="submit"
+              variant="primary"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (isEn ? 'Checking Duplicate Registry...' : 'साख जांच जारी...') : (isEn ? 'Register & Verify Loan' : 'ऋण दर्ज एवं सत्यापित करें')}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

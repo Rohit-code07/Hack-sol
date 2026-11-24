@@ -19,8 +19,11 @@ public class WebClientConfig {
     @Value("${kisansetu.ai-service.base-url:http://localhost:8000}")
     private String aiServiceBaseUrl;
 
-    @Value("${kisansetu.ai-service.timeout-seconds:5}")
+    @Value("${kisansetu.ai-service.timeout-seconds:15}")
     private int timeoutSeconds;
+
+    @Value("${kisansetu.ai-service.api-key:kisansetu-secret-key}")
+    private String aiServiceApiKey;
 
     @Bean
     public WebClient aiWebClient() {
@@ -33,6 +36,8 @@ public class WebClientConfig {
 
         return WebClient.builder()
                 .baseUrl(aiServiceBaseUrl)
+                .defaultHeader("X-AI-Service-Key", aiServiceApiKey)
+                .defaultHeader("X-Internal-API-Key", aiServiceApiKey)
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .build();
     }

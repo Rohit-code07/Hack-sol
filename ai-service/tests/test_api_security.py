@@ -21,7 +21,7 @@ def test_health_endpoint_available_without_gemini():
     assert "dependencies" in data
     assert "gemini_llm" in data["dependencies"]
     assert "chroma_vectorstore" in data["dependencies"]
-    assert data["dependencies"]["embedding_model"]["dimension"] == 1024
+    assert data["dependencies"]["embedding_model"]["dimension"] in [384, 768, 1024]
 
 
 def test_root_endpoint():

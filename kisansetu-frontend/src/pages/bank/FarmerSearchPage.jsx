@@ -24,7 +24,7 @@ export default function FarmerSearchPage() {
   const prefersReducedMotion = useReducedMotion();
   useDocumentTitle('bank.farmerSearchTitle', 'Farmer Search & Verification');
 
-  const [searchTerm, setSearchTerm] = useState('Ramesh');
+  const [searchTerm, setSearchTerm] = useState('');
   const [farmersList, setFarmersList] = useState([]);
   const [loading, setLoading] = useState(false);
 

@@ -5,6 +5,7 @@ import TopNav from '../common/TopNav';
 import Footer from '../common/Footer';
 import PageTransition from '../motion/PageTransition';
 import SideFarmerGutters from './SideFarmerGutters';
+import KisanAiAssistant from '../ai/KisanAiAssistant';
 
 /**
  * Main layout for Farmer Portal with accessible skip-link,
@@ -49,6 +50,9 @@ export default function FarmerLayout() {
           </PageTransition>
         </main>
       </div>
+
+      {/* KisanSetu Grounded Policy AI Assistant */}
+      <KisanAiAssistant />
 
       {/* Footer - 100% clean, never overlapped */}
       <Footer />

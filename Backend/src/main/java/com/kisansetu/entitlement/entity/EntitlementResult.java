@@ -34,7 +34,7 @@ public class EntitlementResult {
     private String entitlementType;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "input_data", nullable = false, columnDefinition = "jsonb")
+    @Column(name = "input_data", nullable = false)
     private String inputData;
 
     @Column(name = "expected_amount", nullable = false, precision = 15, scale = 2)
@@ -47,7 +47,7 @@ public class EntitlementResult {
     private BigDecimal differenceAmount;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "calculation_breakdown", nullable = false, columnDefinition = "jsonb")
+    @Column(name = "calculation_breakdown", nullable = false)
     private String calculationBreakdown;
 
     @Column(name = "rule_version", nullable = false, length = 50)

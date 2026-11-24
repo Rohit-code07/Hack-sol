@@ -23,6 +23,7 @@ from app.rag.vector_store import vector_store_service
 from app.api.policy_routes import router as policy_router
 from app.api.grievance_routes import router as grievance_router
 from app.api.explanation_routes import router as explanation_router
+from app.api.api_ai_routes import router as api_ai_router
 
 # Configure structured logging
 logging.basicConfig(
@@ -94,10 +95,11 @@ async def llm_provider_exception_handler(request: Request, exc: LLMProviderError
     )
 
 
-# Register API Routers under /ai/v1 prefix
+# Register API Routers under /ai/v1 prefix and /api/ai
 app.include_router(policy_router, prefix=settings.API_V1_PREFIX)
 app.include_router(grievance_router, prefix=settings.API_V1_PREFIX)
 app.include_router(explanation_router, prefix=settings.API_V1_PREFIX)
+app.include_router(api_ai_router)
 
 
 @app.get("/", tags=["Root"])
@@ -141,7 +143,7 @@ async def health_check():
             },
             "embedding_model": {
                 "model": settings.BGE_M3_MODEL,
-                "dimension": 1024,
+                "dimension": vector_store_service.embeddings.get_dimension() if hasattr(vector_store_service.embeddings, "get_dimension") else 768,
                 "multilingual": True
             }
         }

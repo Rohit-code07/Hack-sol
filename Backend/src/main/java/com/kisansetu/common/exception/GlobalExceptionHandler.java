@@ -56,6 +56,19 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error("You do not have permission to access this resource", "ACCESS_DENIED"));
     }
 
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Object>> handleDataIntegrityViolation(org.springframework.dao.DataIntegrityViolationException ex) {
+        log.warn("Database integrity constraint violation: {}", ex.getMessage());
+        String message = "A record with this information already exists.";
+        if (ex.getMessage() != null && ex.getMessage().contains("farmers_mobile_number_key")) {
+            message = "Mobile number is already registered.";
+        } else if (ex.getMessage() != null && ex.getMessage().contains("users_username_key")) {
+            message = "Username is already registered.";
+        }
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ApiResponse.error(message, "DUPLICATE_RESOURCE"));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Object>> handleGeneralException(Exception ex) {
         log.error("Unhandled internal exception: ", ex);

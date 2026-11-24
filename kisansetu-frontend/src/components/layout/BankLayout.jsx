@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, Globe, LogOut, UserCheck } from 'lucide-react';
+import { Menu, Globe, LogOut, UserCheck, Sprout } from 'lucide-react';
 import BankRail from '../common/BankRail';
 import Footer from '../common/Footer';
 import useAuth from '../../hooks/useAuth';
@@ -114,6 +114,16 @@ export default function BankLayout() {
                 ({role === 'bank' ? 'Credit Officer' : role})
               </span>
             </div>
+
+            {/* Farmer Portal Quick Link */}
+            <Link
+              to="/login?role=farmer"
+              className="min-h-[44px] hidden sm:inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider text-clay-500 bg-paper-100 border border-clay-500 rounded-sm hover:bg-paper-200 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-saffron-400"
+              title={language === 'hi' ? 'किसान पोर्टल पर जाएं' : 'Switch to Farmer Portal'}
+            >
+              <Sprout className="w-3.5 h-3.5 text-clay-500" />
+              <span>{language === 'hi' ? 'किसान पोर्टल' : 'Farmer Portal'}</span>
+            </Link>
 
             {/* Language Switch with smooth label cross-fade (M1.5) */}
             <button

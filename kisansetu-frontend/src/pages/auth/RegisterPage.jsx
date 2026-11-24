@@ -20,23 +20,40 @@ import { registerFarmer } from '../../services/authService';
 export default function RegisterPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { success: showSuccessToast } = useToast();
+  const { success: showSuccessToast, error: showErrorToast } = useToast();
   useDocumentTitle('register.title', 'Farmer Registration');
 
   const [formData, setFormData] = useState({
     name: '',
     fatherName: '',
+    dob: '',
+    gender: 'Male',
     village: '',
-    district: 'Wardha',
+    tehsil: 'Arang',
+    district: 'Raipur',
+    state: 'Chhattisgarh',
+    pinCode: '',
+    address: '',
     mobile: '',
+    alternateMobile: '',
+    aadhaarNumber: '',
     category: 'OBC',
+    farmerType: 'Individual',
+    farmingType: 'Owner',
+    primaryCrop: 'Paddy',
+    secondaryCrops: '',
+    totalLandArea: '3.5',
+    irrigationAvailable: true,
+    irrigationType: 'Canal',
+    soilType: 'Alluvial',
+    password: '',
   });
 
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [registeredProfile, setRegisteredProfile] = useState(null);
 
-  const districts = ['Wardha', 'Yavatmal', 'Meerut', 'Barabanki', 'Lucknow'];
+  const districts = ['Raipur', 'Durg', 'Bilaspur', 'Rajnandgaon', 'Dhamtari', 'Wardha', 'Yavatmal'];
   const categories = ['OBC', 'GENERAL', 'SC', 'ST'];
 
   const validate = () => {
@@ -59,11 +76,20 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const res = await registerFarmer(formData);
+      const payload = {
+        ...formData,
+        username: formData.mobile.trim(),
+        password: formData.password || 'Farmer@123',
+      };
+      const res = await registerFarmer(payload);
       if (res.success) {
         setRegisteredProfile(res.data);
         showSuccessToast(t('register.toastSuccess', 'Farmer profile created successfully!'));
       }
+    } catch (err) {
+      const errMsg = err?.response?.data?.message || err?.message || t('errors.generic', 'Registration failed. Please try again.');
+      showErrorToast(errMsg);
+      setErrors((prev) => ({ ...prev, mobile: errMsg }));
     } finally {
       setLoading(false);
     }
@@ -126,11 +152,11 @@ export default function RegisterPage() {
                 <Button
                   variant="primary"
                   size="lg"
-                  onClick={() => navigate('/login?role=farmer')}
+                  onClick={() => navigate('/farmer')}
                   icon={<ArrowRight className="w-4 h-4" />}
                   className="w-full"
                 >
-                  {t('register.goToLoginBtn', 'Proceed to Login as Farmer')}
+                  {t('register.goToDashboardBtn', 'Proceed to Farmer Dashboard')}
                 </Button>
               </div>
             </div>
@@ -151,7 +177,14 @@ export default function RegisterPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-                <div className="animate-fade-up" style={{ animationDelay: '0ms' }}>
+                {/* 1. Personal & Contact Details */}
+                <div className="border-b border-paper-200 pb-1.5">
+                  <span className="text-xs font-bold font-serif text-indigo-950 uppercase tracking-wider">
+                    {t('register.sec1', '1. Personal & Identification')}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-up">
                   <Field
                     id="reg-name"
                     label={t('register.nameLabel', 'Farmer Full Name')}
@@ -159,11 +192,8 @@ export default function RegisterPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     error={errors.name}
-                    placeholder="e.g. Ramesh Kumar"
+                    placeholder="e.g. Kisan Full Name"
                   />
-                </div>
-
-                <div className="animate-fade-up" style={{ animationDelay: '50ms' }}>
                   <Field
                     id="reg-father"
                     label={t('register.fatherNameLabel', "Father's / Husband's Name")}
@@ -173,26 +203,37 @@ export default function RegisterPage() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-up" style={{ animationDelay: '100ms' }}>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-up">
                   <Field
-                    id="reg-village"
-                    label={t('register.villageLabel', 'Village / Gram Panchayat')}
-                    value={formData.village}
-                    onChange={(e) => setFormData({ ...formData, village: e.target.value })}
-                    placeholder="e.g. Chandrapur Khurd"
+                    id="reg-dob"
+                    type="date"
+                    label={t('register.dobLabel', 'Date of Birth')}
+                    value={formData.dob}
+                    onChange={(e) => setFormData({ ...formData, dob: e.target.value })}
                   />
-
                   <Field
-                    id="reg-district"
+                    id="reg-gender"
                     type="select"
-                    label={t('register.districtLabel', 'District')}
-                    value={formData.district}
-                    onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                    options={districts}
+                    label={t('register.genderLabel', 'Gender')}
+                    value={formData.gender}
+                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                    options={[
+                      { value: 'Male', label: 'Male (पुरुष)' },
+                      { value: 'Female', label: 'Female (महिला)' },
+                      { value: 'Other', label: 'Other (अन्य)' },
+                    ]}
+                  />
+                  <Field
+                    id="reg-category"
+                    type="select"
+                    label={t('register.categoryLabel', 'Social Category')}
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    options={categories}
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-up" style={{ animationDelay: '150ms' }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-up">
                   <Field
                     id="reg-mobile"
                     type="tel"
@@ -206,7 +247,24 @@ export default function RegisterPage() {
                     error={errors.mobile}
                     placeholder="9876543210"
                   />
+                  <Field
+                    id="reg-alt-mob"
+                    type="tel"
+                    label={t('register.altMobileLabel', 'Alternate Mobile (Optional)')}
+                    value={formData.alternateMobile}
+                    onChange={(e) => setFormData({ ...formData, alternateMobile: e.target.value.replace(/\D/g, '') })}
+                    placeholder="98230XXXXX"
+                  />
+                </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-up">
+                  <Field
+                    id="reg-aadhaar"
+                    label={t('register.aadhaarLabel', 'Aadhaar Number (Masked)')}
+                    value={formData.aadhaarNumber}
+                    onChange={(e) => setFormData({ ...formData, aadhaarNumber: e.target.value })}
+                    placeholder="XXXX-XXXX-1234"
+                  />
                   <div className="flex flex-col gap-1.5">
                     <span className="text-xs uppercase font-bold tracking-wider text-clay-500">
                       {t('register.mobilePreviewLabel', 'Masked Ledger Display')}
@@ -217,14 +275,151 @@ export default function RegisterPage() {
                   </div>
                 </div>
 
-                <div className="animate-fade-up" style={{ animationDelay: '200ms' }}>
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 animate-fade-up">
                   <Field
-                    id="reg-category"
+                    id="reg-village"
+                    label={t('register.villageLabel', 'Village')}
+                    value={formData.village}
+                    onChange={(e) => setFormData({ ...formData, village: e.target.value })}
+                    placeholder="e.g. Chandrapur"
+                  />
+                  <Field
+                    id="reg-tehsil"
+                    label={t('register.tehsilLabel', 'Tehsil / Block')}
+                    value={formData.tehsil}
+                    onChange={(e) => setFormData({ ...formData, tehsil: e.target.value })}
+                    placeholder="Arang"
+                  />
+                  <Field
+                    id="reg-district"
                     type="select"
-                    label={t('register.categoryLabel', 'Social Category')}
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    options={categories}
+                    label={t('register.districtLabel', 'District')}
+                    value={formData.district}
+                    onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                    options={districts}
+                  />
+                  <Field
+                    id="reg-state"
+                    label={t('register.stateLabel', 'State')}
+                    value={formData.state}
+                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                    placeholder="Chhattisgarh"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-up">
+                  <div className="sm:col-span-2">
+                    <Field
+                      id="reg-address"
+                      label={t('register.addressLabel', 'Full Postal Address')}
+                      value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      placeholder="Ward No. 2, Station Road"
+                    />
+                  </div>
+                  <Field
+                    id="reg-pin"
+                    label={t('register.pinLabel', 'PIN Code')}
+                    value={formData.pinCode}
+                    onChange={(e) => setFormData({ ...formData, pinCode: e.target.value })}
+                    placeholder="493441"
+                  />
+                </div>
+
+                {/* 2. Agricultural Profile */}
+                <div className="border-b border-paper-200 pb-1.5 pt-2">
+                  <span className="text-xs font-bold font-serif text-indigo-950 uppercase tracking-wider">
+                    {t('register.sec2', '2. Agricultural Land & Crops')}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-up">
+                  <Field
+                    id="reg-farmer-type"
+                    type="select"
+                    label={t('register.scaleLabel', 'Farmer Scale')}
+                    value={formData.farmerType}
+                    onChange={(e) => setFormData({ ...formData, farmerType: e.target.value })}
+                    options={[
+                      { value: 'Marginal', label: 'Marginal (< 1 ha)' },
+                      { value: 'Small', label: 'Small (1 - 2 ha)' },
+                      { value: 'Medium', label: 'Medium / Large' },
+                      { value: 'Individual', label: 'Individual Farmer' },
+                    ]}
+                  />
+                  <Field
+                    id="reg-farming-type"
+                    type="select"
+                    label={t('register.tenureLabel', 'Tenure Status')}
+                    value={formData.farmingType}
+                    onChange={(e) => setFormData({ ...formData, farmingType: e.target.value })}
+                    options={[
+                      { value: 'Owner', label: 'Land Owner (भू-स्वामी)' },
+                      { value: 'Tenant', label: 'Tenant (बटाईदार)' },
+                      { value: 'Sharecropper', label: 'Sharecropper' },
+                    ]}
+                  />
+                  <Field
+                    id="reg-land-area"
+                    type="number"
+                    step="0.01"
+                    label={t('register.landAreaLabel', 'Total Land (Acres)')}
+                    value={formData.totalLandArea}
+                    onChange={(e) => setFormData({ ...formData, totalLandArea: e.target.value })}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 animate-fade-up">
+                  <Field
+                    id="reg-primary-crop"
+                    label={t('register.cropLabel', 'Primary Crop')}
+                    value={formData.primaryCrop}
+                    onChange={(e) => setFormData({ ...formData, primaryCrop: e.target.value })}
+                    placeholder="Paddy"
+                  />
+                  <Field
+                    id="reg-irrig-type"
+                    type="select"
+                    label={t('register.irrigLabel', 'Irrigation System')}
+                    value={formData.irrigationType}
+                    onChange={(e) => setFormData({ ...formData, irrigationType: e.target.value })}
+                    options={[
+                      { value: 'Canal', label: 'Canal / River' },
+                      { value: 'Tube Well', label: 'Tube Well / Bore' },
+                      { value: 'Rainfed', label: 'Rainfed (वर्षा)' },
+                      { value: 'Drip', label: 'Drip / Micro' },
+                    ]}
+                  />
+                  <Field
+                    id="reg-soil"
+                    type="select"
+                    label={t('register.soilLabel', 'Soil Type')}
+                    value={formData.soilType}
+                    onChange={(e) => setFormData({ ...formData, soilType: e.target.value })}
+                    options={[
+                      { value: 'Alluvial', label: 'Alluvial (जलोढ़)' },
+                      { value: 'Black (Regur)', label: 'Black Cotton (काली)' },
+                      { value: 'Red & Yellow', label: 'Red & Yellow (लाल-पीली)' },
+                      { value: 'Clay Loam', label: 'Clay Loam (दोमट)' },
+                    ]}
+                  />
+                </div>
+
+                {/* 3. Account Password */}
+                <div className="border-b border-paper-200 pb-1.5 pt-2">
+                  <span className="text-xs font-bold font-serif text-indigo-950 uppercase tracking-wider">
+                    {t('register.sec3', '3. Account Security')}
+                  </span>
+                </div>
+
+                <div className="animate-fade-up">
+                  <Field
+                    id="reg-password"
+                    type="password"
+                    label={t('register.passwordLabel', 'Account Password')}
+                    placeholder="Default: Farmer@123"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   />
                 </div>
 

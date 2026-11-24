@@ -19,7 +19,6 @@ import java.util.UUID;
 @AllArgsConstructor
 public class KccEvaluationRequest {
 
-    @NotNull(message = "Farmer ID is required")
     private UUID farmerId;
 
     private Long loanId;

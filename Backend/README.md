@@ -2,7 +2,7 @@
 
 [![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3.5-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)](https://www.postgresql.org/)
+[![MySQL](https://img.shields.io/badge/MySQL-8.4%20LTS-blue.svg)](https://www.mysql.com/)
 [![Flyway](https://img.shields.io/badge/Flyway-10-red.svg)](https://flywaydb.org/)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
@@ -86,23 +86,23 @@ Backend/
 
 ### Prerequisites
 - **Java Development Kit (JDK)**: Java 21 or higher
-- **Docker & Docker Compose** (for running PostgreSQL), or a local PostgreSQL 16 instance
+- **Docker & Docker Compose** (for running MySQL 8.4 LTS), or a local MySQL 8.0+ instance
 
 ### 1. Database Setup with Docker Compose
-To launch PostgreSQL with the default `kisansetu` database:
+To launch MySQL 8.4 LTS with the default `kisansetu` database:
 ```bash
 docker compose up -d
 ```
-The database will be reachable at `localhost:5432` with username `postgres` and password `change_me`.
+The database will be reachable at `localhost:3306` with username `kisansetu` and password `kisansetu123`.
 
 ### 2. Configure Environment Variables
 Copy `.env.example` to `.env` or set environment variables as needed:
 ```bash
 DB_HOST=localhost
-DB_PORT=5432
+DB_PORT=3306
 DB_NAME=kisansetu
-DB_USERNAME=postgres
-DB_PASSWORD=change_me
+DB_USERNAME=kisansetu
+DB_PASSWORD=kisansetu123
 SERVER_PORT=8080
 JWT_SECRET=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
 AI_SERVICE_BASE_URL=http://localhost:8000
@@ -113,7 +113,7 @@ Execute the full JUnit 5 test suite:
 ```powershell
 .\mvnw.cmd test
 ```
-*Current test status: 30 tests run, 0 failures, 0 errors.*
+*Current test status: 35 tests run, 0 failures, 0 errors.*
 
 ### 4. Run the Application
 Start the Spring Boot backend:
@@ -126,7 +126,7 @@ Or package and execute the fat JAR:
 java -jar target/kisansetu-backend-1.0.0-SNAPSHOT.jar
 ```
 
-Flyway will automatically execute migrations `V1__init_schema.sql` and `V2__seed_synthetic_data.sql` on startup, preparing all tables and sample datasets.
+Flyway will automatically execute migrations `V1__create_mysql_schema.sql` and `V2__insert_initial_demo_data.sql` on startup, preparing all tables and sample datasets.
 
 ---
 
