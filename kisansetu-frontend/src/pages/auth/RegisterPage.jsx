@@ -10,6 +10,7 @@ import Field from '../../components/common/Field';
 import Footer from '../../components/common/Footer';
 import { maskMobile } from '../../utils/formatters';
 import { registerFarmer } from '../../services/authService';
+import UniversalFormAssistant from '../../components/common/UniversalFormAssistant';
 
 /**
  * RegisterPage component
@@ -177,6 +178,13 @@ export default function RegisterPage() {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+                {/* AI Universal Smart Form Assistant (Voice + Document) */}
+                <UniversalFormAssistant
+                  formId="farmer-registration"
+                  currentValues={formData}
+                  onApplyFields={(updates) => setFormData((prev) => ({ ...prev, ...updates }))}
+                />
+
                 {/* 1. Personal & Contact Details */}
                 <div className="border-b border-paper-200 pb-1.5">
                   <span className="text-xs font-bold font-serif text-indigo-950 uppercase tracking-wider">

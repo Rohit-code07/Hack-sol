@@ -20,6 +20,7 @@ import CountUp from '../../components/motion/CountUp';
 import Modal from '../../components/common/Modal';
 import Field from '../../components/common/Field';
 import ListenButton from '../../components/common/ListenButton';
+import UniversalFormAssistant from '../../components/common/UniversalFormAssistant';
 
 /**
  * Farmer Loan Ledger Page displaying institutional credit accounts, NPA status, and limits.
@@ -512,6 +513,13 @@ export default function LoanLedgerPage() {
         maxWidth="max-w-2xl"
       >
         <form onSubmit={handleCreateLoan} className="space-y-4">
+          {/* Universal Smart Form Assistant (Voice + Document) */}
+          <UniversalFormAssistant
+            formId="loan-registration"
+            currentValues={formData}
+            onApplyFields={(updates) => setFormData((prev) => ({ ...prev, ...updates }))}
+          />
+
           <div className="p-3 bg-paper-100 border border-paper-200 rounded-sm text-xs text-ink-muted leading-relaxed">
             {isEn
               ? 'Entered loan details will be checked against the Demo Synthetic Loan Registry. If the linked khasra is already pledged to another bank, an automatic Duplicate Financing Warning will be flagged.'

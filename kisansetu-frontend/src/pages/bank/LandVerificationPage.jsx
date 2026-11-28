@@ -21,6 +21,7 @@ import Stamp from '../../components/common/Stamp';
 import Button from '../../components/common/Button';
 import TermHint from '../../components/common/TermHint';
 import useReducedMotion from '../../hooks/useReducedMotion';
+import UniversalFormAssistant from '../../components/common/UniversalFormAssistant';
 
 /**
  * Cadastre Cross-Registry Land Verification Tool for Bank Credit Officers.
@@ -159,6 +160,16 @@ export default function LandVerificationPage() {
 
       {/* Query Form Panel */}
       <Panel accent="indigo" className="shadow-hard-sm">
+        {/* Universal Smart Form Assistant (Voice + Document) */}
+        <UniversalFormAssistant
+          formId="bank-cadastre-verification"
+          currentValues={{ surveyNumber, farmerId }}
+          onApplyFields={(updates) => {
+            if (updates.surveyNumber) setSurveyNumber(updates.surveyNumber);
+            if (updates.farmerId) setFarmerId(updates.farmerId);
+          }}
+        />
+
         <form onSubmit={handleVerify} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
           <div className="md:col-span-5">
             <Field

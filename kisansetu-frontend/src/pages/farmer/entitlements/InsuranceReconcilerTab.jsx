@@ -13,6 +13,7 @@ import Button from '../../../components/common/Button';
 import TermHint from '../../../components/common/TermHint';
 import Modal from '../../../components/common/Modal';
 import useReducedMotion from '../../../hooks/useReducedMotion';
+import UniversalFormAssistant from '../../../components/common/UniversalFormAssistant';
 
 /**
  * PMFBY Crop Insurance Reconciler with dynamic policy verification and scale-in report.
@@ -447,6 +448,13 @@ export default function InsuranceReconcilerTab() {
         maxWidth="max-w-2xl"
       >
         <form onSubmit={handleEnrollPolicy} className="space-y-4">
+          {/* Universal Smart Form Assistant (Voice + Document) */}
+          <UniversalFormAssistant
+            formId="insurance-enrollment"
+            currentValues={policyForm}
+            onApplyFields={(updates) => setPolicyForm((prev) => ({ ...prev, ...updates }))}
+          />
+
           {formMsg.text && (
             <div className={`p-3 rounded-sm text-xs font-bold flex items-center gap-2 animate-slide-down ${formMsg.type === 'error' ? 'bg-rust-100 text-rust-700 border border-rust-600' : 'bg-sage-100 text-sage-800 border border-sage-600'}`}>
               {formMsg.type === 'error' ? <AlertOctagon className="w-4 h-4 shrink-0" /> : <Check className="w-4 h-4 shrink-0" />}
@@ -548,6 +556,13 @@ export default function InsuranceReconcilerTab() {
         maxWidth="max-w-2xl"
       >
         <form onSubmit={handleSubmitClaim} className="space-y-4">
+          {/* Universal Smart Form Assistant (Voice + Document) */}
+          <UniversalFormAssistant
+            formId="insurance-claim"
+            currentValues={claimForm}
+            onApplyFields={(updates) => setClaimForm((prev) => ({ ...prev, ...updates }))}
+          />
+
           {formMsg.text && (
             <div className={`p-3 rounded-sm text-xs font-bold flex items-center gap-2 animate-slide-down ${formMsg.type === 'error' ? 'bg-rust-100 text-rust-700 border border-rust-600' : 'bg-sage-100 text-sage-800 border border-sage-600'}`}>
               {formMsg.type === 'error' ? <AlertOctagon className="w-4 h-4 shrink-0" /> : <Check className="w-4 h-4 shrink-0" />}

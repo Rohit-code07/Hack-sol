@@ -28,6 +28,7 @@ import useDiscrepancies from '../../hooks/useDiscrepancies';
 import farmerApi from '../../api/farmerApi';
 import { getMe } from '../../services/farmerService';
 import { getEntitlements } from '../../services/entitlementService';
+import UniversalFormAssistant from '../../components/common/UniversalFormAssistant';
 import { formatCurrency } from '../../utils/formatters';
 import { formatRelativeTime } from '../../utils/relativeTime';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
@@ -872,6 +873,13 @@ export default function FarmerDashboard() {
             maxWidth="max-w-3xl"
           >
             <form onSubmit={handleUpdateProfile} className="space-y-4">
+              {/* Universal Smart Form Assistant (Voice + Document) */}
+              <UniversalFormAssistant
+                formId="farmer-profile"
+                currentValues={profileForm}
+                onApplyFields={(updates) => setProfileForm((prev) => ({ ...prev, ...updates }))}
+              />
+
               <div className="p-3 bg-paper-100 border border-paper-200 rounded-sm text-xs text-ink-muted leading-relaxed">
                 {isEn
                   ? 'Keep your personal and agricultural details accurate to ensure seamless verification for KCC loans, MSP procurement, and PMFBY claims.'

@@ -18,6 +18,7 @@ import ErrorState from '../../components/common/ErrorState';
 import Modal from '../../components/common/Modal';
 import Field from '../../components/common/Field';
 import ListenButton from '../../components/common/ListenButton';
+import UniversalFormAssistant from '../../components/common/UniversalFormAssistant';
 
 /**
  * Farmer Land Records Page displaying registered cadastre parcels and title mismatches.
@@ -479,6 +480,13 @@ export default function LandRecordsPage() {
         maxWidth="max-w-2xl"
       >
         <form onSubmit={handleCreateLandRecord} className="space-y-4">
+          {/* Universal Smart Form Assistant (Voice + Document) */}
+          <UniversalFormAssistant
+            formId="land-parcel-registration"
+            currentValues={formData}
+            onApplyFields={(updates) => setFormData((prev) => ({ ...prev, ...updates }))}
+          />
+
           <div className="p-3 bg-paper-100 border border-paper-200 rounded-sm text-xs text-ink-muted leading-relaxed">
             {isEn
               ? 'Land details submitted will be immediately cross-referenced with the Synthetic Demo Cadastre Registry to verify ownership and detect any title discrepancies.'

@@ -23,6 +23,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import aiApi from '../../api/aiApi';
+import UniversalFormAssistant from '../../components/common/UniversalFormAssistant';
 import useAuth from '../../hooks/useAuth';
 import useAsync from '../../hooks/useAsync';
 import useToast from '../../hooks/useToast';
@@ -418,6 +419,16 @@ export default function GrievanceHistoryPage() {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Universal Smart Form Assistant (Voice + Document) */}
+            <UniversalFormAssistant
+              formId="grievance-submission"
+              currentValues={{ category, description }}
+              onApplyFields={(updates) => {
+                if (updates.category) setCategory(updates.category);
+                if (updates.description) setDescription(updates.description);
+              }}
+            />
+
             <Field
               id="grv-cat"
               type="select"
