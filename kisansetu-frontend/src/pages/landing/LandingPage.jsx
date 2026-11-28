@@ -839,7 +839,7 @@ export default function LandingPage() {
           
           {/* Small Woman Farmer Vignette Card */}
           <div className="hidden sm:flex items-center gap-3 bg-paper-100 p-2.5 rounded-sm border-2 border-indigo-900 shadow-hard-sm shrink-0">
-            <img src={farmerVignette3} alt="महिला किसान" className="w-14 h-14" />
+            <img src={farmerVignette3} alt="महिला किसान" className="w-14 h-14 object-contain shrink-0" />
             <div className="text-xs">
               <span className="font-bold text-indigo-900 block font-serif">
                 {isEn ? 'Women & Small Farmers' : 'महिला व छोटे किसान'}
@@ -998,7 +998,7 @@ export default function LandingPage() {
             {/* Right: Technical Explanation of Cadastre Automation */}
             <div className="lg:col-span-5 space-y-4">
               <div className="flex items-center gap-2">
-                <img src={farmerVignette2} alt="Digital Kisan" className="w-10 h-10 shrink-0" />
+                <img src={farmerVignette2} alt="Digital Kisan" className="w-10 h-10 shrink-0 object-contain" />
                 <span className="text-xs uppercase font-bold tracking-wider text-clay-500">
                   {isEn ? 'Digital Cadastre Integration • GIS Mapping' : 'डिजिटल भूलेख एकीकरण • Digital Cadastre'}
                 </span>
@@ -1142,7 +1142,7 @@ export default function LandingPage() {
           </div>
           
           <div className="hidden sm:flex items-center gap-2 bg-paper-100 px-3 py-1.5 rounded-sm border border-indigo-900/40 shrink-0">
-            <img src={farmerVignette4} alt="उन्नत कृषि" className="w-9 h-9" />
+            <img src={farmerVignette4} alt="उन्नत कृषि" className="w-9 h-9 shrink-0 object-contain" />
             <span className="text-xs font-bold text-indigo-900 font-serif">
               {isEn ? '100% Ground Verified' : '100% धरातलीय सत्यापन'}
             </span>

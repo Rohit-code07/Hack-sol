@@ -4,15 +4,15 @@ import { useTranslation } from 'react-i18next';
 import TopNav from '../common/TopNav';
 import Footer from '../common/Footer';
 import PageTransition from '../motion/PageTransition';
-import SideFarmerGutters from './SideFarmerGutters';
+import { SideFarmerLeftRail, SideFarmerRightRail, SideFarmerMobileShowcase } from './SideFarmerGutters';
 import KisanAiAssistant from '../ai/KisanAiAssistant';
 
 /**
  * Main layout for Farmer Portal with accessible skip-link,
- * animated page transitions, and background security paper watermarks.
+ * animated page transitions, and structured 3-column document flow layout.
  * 
- * Note: Side watermarks are strictly bounded within the main content wrapper
- * (never fixed to viewport, zero footer overlap, authentic paper grain blending).
+ * Images & Side Rails are in normal document flow (Flexbox).
+ * Zero overlap is mathematically guaranteed across all screen resolutions.
  */
 export default function FarmerLayout() {
   const { t } = useTranslation();
@@ -31,24 +31,31 @@ export default function FarmerLayout() {
       <TopNav />
 
       {/* 
-        Main Page Content Area Wrapper 
-        Contains both the central reading column AND the integrated 
-        side background watermarks that scroll naturally and NEVER touch the footer.
+        Main Page Content Area Wrapper:
+        Modern 3-Column Layout in Normal Document Flow (Flexbox).
+        The Left & Right Agricultural Side Rails are distinct sibling columns that flank <main>.
+        Zero overlap is mathematically guaranteed.
       */}
-      <div className="flex-1 w-full max-w-[1440px] mx-auto relative min-h-[calc(100vh-280px)]">
-        {/* Integrated Background Farmer & Official Watermarks (Strictly bounded inside wrapper) */}
-        <SideFarmerGutters />
+      <div className="flex-1 w-full max-w-[1680px] mx-auto px-3 sm:px-6 relative min-h-[calc(100vh-280px)] flex justify-center items-start gap-4 xl:gap-6 2xl:gap-8">
+        {/* Left Side Rail: Dedicated Desktop Column (Normal Document Flow) */}
+        <SideFarmerLeftRail />
 
-        {/* Main Centered Content (Expands naturally to full content height, zero clipping) */}
+        {/* Main Centered Content: Fully Protected & Centered */}
         <main
           id="main-content"
           tabIndex={-1}
-          className="w-full max-w-[1020px] 2xl:max-w-[1080px] mx-auto px-4 sm:px-6 py-6 sm:py-8 pb-16 focus:outline-none relative z-10"
+          className="flex-1 w-full max-w-[1020px] 2xl:max-w-[1080px] min-w-0 py-6 sm:py-8 pb-16 focus:outline-none relative z-10"
         >
           <PageTransition>
             <Outlet />
           </PageTransition>
+
+          {/* Graceful adaptation for Tablets & Mobile (< 1400px): Agricultural Showcase at bottom */}
+          <SideFarmerMobileShowcase />
         </main>
+
+        {/* Right Side Rail: Dedicated Desktop Column (Normal Document Flow) */}
+        <SideFarmerRightRail />
       </div>
 
       {/* KisanSetu Grounded Policy AI Assistant */}

@@ -288,9 +288,9 @@ export default function FarmerDashboard() {
         </div>
       ) : (
         <>
-          {/* M3.1: Haq Gap Hero Card with transparent Annadata watermark */}
+          {/* M3.1: Haq Gap Hero Card with transparent Annadata watermark positioned in lower-right background */}
           <Panel accent="clay" className="shadow-hard space-y-4 relative overflow-hidden">
-            <div className="absolute right-3 top-3 w-16 h-16 pointer-events-none opacity-20 mix-blend-multiply hidden sm:block">
+            <div className="absolute -right-3 -bottom-3 w-28 h-28 pointer-events-none opacity-10 mix-blend-multiply hidden md:block select-none" aria-hidden="true">
               <img src={farmerVignette1} alt="" className="w-full h-full object-contain" />
             </div>
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-paper-200 pb-3">

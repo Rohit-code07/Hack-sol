@@ -45,7 +45,7 @@ export default function NotFoundPage() {
           ref={emblemRef}
           src={emblemSvg}
           alt="Emblem"
-          className="w-20 h-20 mb-6"
+          className="w-20 h-20 mb-6 object-contain shrink-0"
         />
 
         <span className="font-serif font-bold text-6xl sm:text-7xl text-clay-500 tracking-tight block animate-scale-in">
