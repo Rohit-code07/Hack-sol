@@ -377,13 +377,16 @@ export default function KisanAiAssistant() {
     <>
       {/* Floating Trigger Button */}
       <div className="fixed bottom-6 right-6 z-40">
+        {/* Outer glow ring */}
+        <span className="absolute inset-0 rounded-sm animate-ping opacity-40 bg-saffron-400 pointer-events-none" />
         <button
           onClick={() => setIsOpen(!isOpen)}
           aria-label={isEn ? 'Open KisanSetu AI Assistant' : 'किसान नीति सहायक खोलें'}
-          className="flex items-center gap-2.5 px-4 py-3 bg-saffron-500 hover:bg-saffron-400 text-indigo-950 font-serif font-bold text-sm border-2 border-indigo-900 rounded-sm shadow-hard transition-all transform hover:-translate-y-0.5 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-indigo-900"
+          className="relative flex items-center gap-2.5 px-4 py-3 bg-gradient-to-br from-amber-400 via-saffron-500 to-orange-500 hover:from-amber-300 hover:via-saffron-400 hover:to-orange-400 text-indigo-950 font-serif font-bold text-sm border-2 border-indigo-900 rounded-sm shadow-hard transition-all transform hover:-translate-y-1 active:translate-y-0 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 ring-2 ring-amber-300 ring-offset-1"
+          style={{ boxShadow: '0 0 18px 4px rgba(251,191,36,0.55), 0 4px 16px rgba(0,0,0,0.18)' }}
         >
-          <Sparkles className="w-5 h-5 text-indigo-950 animate-pulse" />
-          <span className="hidden sm:inline">
+          <Sparkles className="w-5 h-5 text-indigo-950 animate-pulse drop-shadow" />
+          <span className="hidden sm:inline drop-shadow-sm">
             {isEn ? 'Policy AI Sahayak' : 'किसान नीति सहायक'}
           </span>
         </button>
