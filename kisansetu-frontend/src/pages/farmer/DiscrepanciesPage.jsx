@@ -29,6 +29,7 @@ import PageHeader from '../../components/common/PageHeader';
 import Stamp from '../../components/common/Stamp';
 import Panel from '../../components/common/Panel';
 import Button from '../../components/common/Button';
+import ListenButton from '../../components/common/ListenButton';
 import ErrorState from '../../components/common/ErrorState';
 import Skeleton from '../../components/common/Skeleton';
 import Reveal from '../../components/motion/Reveal';
@@ -189,33 +190,11 @@ export default function DiscrepanciesPage() {
               </span>
               <Stamp status={item.severity} />
 
-              {/* Sunein Audio Button with 4-Bar Wave Indicator */}
-              {hasSpeech ? (
-                <button
-                  type="button"
-                  onClick={() => handleSpeak(item)}
-                  aria-label={isSpeaking ? (isEn ? 'Stop listening' : 'सुनना बंद करें') : (isEn ? 'Listen to alert' : 'अलर्ट सुनें')}
-                  className="min-h-[44px] px-2.5 py-1 inline-flex items-center gap-1.5 text-ink-muted hover:text-indigo-900 bg-paper-100 hover:bg-paper-200 border border-paper-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-saffron-400 rounded-sm text-xs font-semibold"
-                >
-                  {isSpeaking ? (
-                    <>
-                      <div className="flex items-center gap-0.5 h-3.5 px-0.5" aria-hidden="true">
-                        <span className="w-0.5 bg-clay-500 rounded-full h-full animate-wave" style={{ animationDelay: '0s' }} />
-                        <span className="w-0.5 bg-clay-500 rounded-full h-full animate-wave" style={{ animationDelay: '0.15s' }} />
-                        <span className="w-0.5 bg-clay-500 rounded-full h-full animate-wave" style={{ animationDelay: '0.3s' }} />
-                        <span className="w-0.5 bg-clay-500 rounded-full h-full animate-wave" style={{ animationDelay: '0.45s' }} />
-                      </div>
-                      <span className="text-clay-500 font-bold">{isEn ? 'Listening...' : 'सुन रहे हैं...'}</span>
-                      <VolumeX className="w-3.5 h-3.5 text-rust-600 ml-0.5" />
-                    </>
-                  ) : (
-                    <>
-                      <Volume2 className="w-3.5 h-3.5 text-clay-500" />
-                      <span>{isEn ? 'Listen' : 'सुनें'}</span>
-                    </>
-                  )}
-                </button>
-              ) : null}
+              <ListenButton
+                text={`${content.ruleName}. ${content.description}. ${isEn ? 'Recommended Action' : 'सुझाया गया निवारण'}: ${content.recommendedAction}`}
+                title={content.ruleName}
+                size="sm"
+              />
             </div>
 
             <div className="flex items-center gap-2 text-xs text-ink-muted">
@@ -288,6 +267,15 @@ export default function DiscrepanciesPage() {
         subtitle={isEn
           ? 'Cross-checked anomalies between your revenue records, bank loans, and subsidies.'
           : 'राजस्व रिकॉर्ड, बैंक ऋण एवं सब्सिडी के बीच पहचानी गई विसंगतियां।'}
+        actions={
+          <ListenButton
+            text={isEn
+              ? `Cadastre and Credit Discrepancies. You have ${discrepancies.length} total flags. ${highList.length} high priority, ${mediumList.length} medium priority, and ${lowList.length} low priority.`
+              : `भूलेख व ऋण विसंगति अलर्ट। आपके खाते में कुल ${discrepancies.length} विसंगतियां हैं। ${highList.length} उच्च प्राथमिकता, ${mediumList.length} मध्यम प्राथमिकता, तथा ${lowList.length} सामान्य सूचनाएं हैं।`
+            }
+            title={isEn ? 'Discrepancy Summary' : 'विसंगति सारांश'}
+          />
+        }
       />
 
       {/* Summary Header Strip */}
@@ -684,13 +672,20 @@ export default function DiscrepanciesPage() {
           </div>
         ) : aiExplanation ? (
           <div className="space-y-4 text-xs">
-            <div className="p-3 bg-paper-100 border border-indigo-900 rounded-xs space-y-1">
-              <span className="text-[10px] uppercase font-bold text-clay-600 block">
-                {isEn ? 'Rule / Scheme Reference' : 'नियम व योजना संदर्भ'}
-              </span>
-              <div className="font-bold text-indigo-950 font-serif text-sm">
-                {selectedDiscrepancy?.ruleCode || selectedDiscrepancy?.category || 'KCC / MSP Entitlement'}
+            <div className="flex items-center justify-between p-3 bg-paper-100 border border-indigo-900 rounded-xs">
+              <div className="space-y-1">
+                <span className="text-[10px] uppercase font-bold text-clay-600 block">
+                  {isEn ? 'Rule / Scheme Reference' : 'नियम व योजना संदर्भ'}
+                </span>
+                <div className="font-bold text-indigo-950 font-serif text-sm">
+                  {selectedDiscrepancy?.ruleCode || selectedDiscrepancy?.category || 'KCC / MSP Entitlement'}
+                </div>
               </div>
+              <ListenButton
+                text={`${isEn ? 'Rule Reference' : 'नियम संदर्भ'}: ${selectedDiscrepancy?.ruleCode || selectedDiscrepancy?.category}. ${aiExplanation.explanation || aiExplanation.responseText}. ${aiExplanation.recommendedAction ? (isEn ? 'Recommended Next Steps' : 'अनुशंसित आगामी कदम') + ': ' + aiExplanation.recommendedAction : ''}`}
+                title={selectedDiscrepancy?.ruleCode || 'AI Explanation'}
+                size="sm"
+              />
             </div>
 
             <div className="space-y-1.5">

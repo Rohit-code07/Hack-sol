@@ -24,6 +24,7 @@ from app.api.policy_routes import router as policy_router
 from app.api.grievance_routes import router as grievance_router
 from app.api.explanation_routes import router as explanation_router
 from app.api.api_ai_routes import router as api_ai_router
+from app.api.document_intelligence_routes import router as document_intelligence_router
 
 # Configure structured logging
 logging.basicConfig(
@@ -100,6 +101,8 @@ app.include_router(policy_router, prefix=settings.API_V1_PREFIX)
 app.include_router(grievance_router, prefix=settings.API_V1_PREFIX)
 app.include_router(explanation_router, prefix=settings.API_V1_PREFIX)
 app.include_router(api_ai_router)
+app.include_router(document_intelligence_router)
+app.include_router(document_intelligence_router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/", tags=["Root"])

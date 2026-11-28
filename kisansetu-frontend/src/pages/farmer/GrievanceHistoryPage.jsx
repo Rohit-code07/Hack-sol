@@ -32,6 +32,7 @@ import { GRIEVANCE_CATEGORIES } from '../../constants';
 import useDocumentTitle from '../../hooks/useDocumentTitle';
 import PageHeader from '../../components/common/PageHeader';
 import Button from '../../components/common/Button';
+import ListenButton from '../../components/common/ListenButton';
 import Stamp from '../../components/common/Stamp';
 import Modal from '../../components/common/Modal';
 import Field from '../../components/common/Field';
@@ -305,13 +306,22 @@ export default function GrievanceHistoryPage() {
           ? 'Register, track status, and obtain digital acknowledgment slips for revenue & bank disputes.'
           : 'राजस्व व बैंक विवादों के लिए पंजीकरण, स्थिति ट्रैक और डिजिटल पावती पर्ची प्राप्त करें।'}
         actions={
-          <Button
-            variant="primary"
-            onClick={handleOpenModal}
-            icon={<PlusCircle className="w-4 h-4" />}
-          >
-            {isEn ? '+ File New Grievance' : '+ नई शिकायत दर्ज करें'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <ListenButton
+              text={isEn
+                ? `Farmer Grievance Redressal Center. You have ${list.length} registered grievances. Click File New Grievance to report discrepancies in land records, missing subsidies, or loan issues.`
+                : `किसान शिकायत निवारण केंद्र। आपके कुल ${list.length} शिकायतें दर्ज हैं। खतौनी, सब्सिडी अथवा ऋण विसंगतियों के समाधान हेतु नई शिकायत दर्ज करें।`
+              }
+              title={isEn ? 'Grievance Overview' : 'शिकायत केंद्र विवरण'}
+            />
+            <Button
+              variant="primary"
+              onClick={handleOpenModal}
+              icon={<PlusCircle className="w-4 h-4" />}
+            >
+              {isEn ? '+ File New Grievance' : '+ नई शिकायत दर्ज करें'}
+            </Button>
+          </div>
         }
       />
 
@@ -433,15 +443,24 @@ export default function GrievanceHistoryPage() {
                 <span className="text-xs font-bold font-serif text-indigo-950">
                   {isEn ? 'Detailed Complaint Description *' : 'विस्तृत विवरण *'}
                 </span>
-                <button
-                  type="button"
-                  onClick={handleAiDraft}
-                  disabled={aiDrafting}
-                  className="inline-flex items-center gap-1.5 text-[11px] font-bold font-mono px-2 py-1 bg-saffron-100 hover:bg-saffron-200 text-indigo-950 border border-saffron-400 rounded-xs transition-colors shadow-hard-sm"
-                >
-                  <Sparkles className={`w-3.5 h-3.5 text-saffron-600 ${aiDrafting ? 'animate-spin' : ''}`} />
-                  <span>{aiDrafting ? (isEn ? 'AI Drafting...' : 'एआई प्रारूप तैयार हो रहा...') : (isEn ? 'Draft with AI' : 'एआई से ड्राफ्ट करें')}</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  {description.trim().length > 0 && (
+                    <ListenButton
+                      text={description}
+                      title={isEn ? 'Grievance Draft' : 'शिकायत प्रारूप'}
+                      size="sm"
+                    />
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleAiDraft}
+                    disabled={aiDrafting}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-bold font-mono px-2 py-1 bg-saffron-100 hover:bg-saffron-200 text-indigo-950 border border-saffron-400 rounded-xs transition-colors shadow-hard-sm"
+                  >
+                    <Sparkles className={`w-3.5 h-3.5 text-saffron-600 ${aiDrafting ? 'animate-spin' : ''}`} />
+                    <span>{aiDrafting ? (isEn ? 'AI Drafting...' : 'एआई प्रारूप तैयार हो रहा...') : (isEn ? 'Draft with AI' : 'एआई से ड्राफ्ट करें')}</span>
+                  </button>
+                </div>
               </div>
               <Field
                 id="grv-desc"
@@ -568,6 +587,12 @@ export default function GrievanceHistoryPage() {
                   </div>
 
                   <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0">
+                    <ListenButton
+                      text={`${isEn ? 'Reference Number' : 'संदर्भ संख्या'}: ${item.referenceNumber}. ${isEn ? 'Status' : 'स्थिति'}: ${item.status}. ${item.description}`}
+                      title={item.referenceNumber}
+                      size="sm"
+                    />
+
                     <Button
                       variant="secondary"
                       size="sm"

@@ -7,6 +7,7 @@ import {
   CreditCard,
   AlertTriangle,
   FileText,
+  FileCheck,
   Gift,
   Globe,
   LogOut,
@@ -55,6 +56,7 @@ export default function TopNav() {
       { to: '/farmer/loans', label: t('nav.loans', 'Credit Ledger'), icon: CreditCard },
       { to: '/farmer/discrepancies', label: t('nav.discrepancies', 'Discrepancies'), icon: AlertTriangle },
       { to: '/farmer/entitlements', label: t('nav.entitlements', 'Entitlements'), icon: Gift },
+      { to: '/farmer/documents', label: language === 'hi' ? 'दस्तावेज़ एआई' : 'AI Documents', icon: FileCheck },
       { to: '/farmer/grievances', label: t('nav.grievances', 'Grievances'), icon: FileText },
     ],
     [t, language]
@@ -93,6 +95,7 @@ export default function TopNav() {
   const mobileActiveIndex = useMemo(() => {
     if (
       location.pathname.startsWith('/farmer/entitlements') ||
+      location.pathname.startsWith('/farmer/documents') ||
       location.pathname.startsWith('/farmer/grievances')
     ) {
       return 4; // 'More' sheet
@@ -281,6 +284,24 @@ export default function TopNav() {
                 </h3>
                 <p className="text-xs text-ink-muted">
                   KCC calculator, MSP verifier & PMFBY insurance
+                </p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            to="/farmer/documents"
+            onClick={() => setIsMoreOpen(false)}
+            className="p-3.5 bg-paper-100 border border-indigo-900 rounded-sm flex items-center justify-between hover:bg-paper-200 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <FileCheck className="w-5 h-5 text-clay-500" />
+              <div>
+                <h3 className="font-bold text-sm text-indigo-900">
+                  {language === 'hi' ? 'दस्तावेज़ एआई स्कैनर' : 'AI Document Intelligence'}
+                </h3>
+                <p className="text-xs text-ink-muted">
+                  {language === 'hi' ? 'ऋण पत्र, खसरा खतौनी, बीमा रसीद विश्लेषण' : 'Scan loan letters, land records, insurance slips'}
                 </p>
               </div>
             </div>

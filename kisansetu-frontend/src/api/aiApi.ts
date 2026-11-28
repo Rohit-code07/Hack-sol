@@ -114,6 +114,24 @@ export const aiApi = {
     const response = await apiClient.post<ApiResponse<AIDiscrepancyExplainResponse>>('/ai/discrepancy/explain', request);
     return response.data;
   },
+
+  /**
+   * Transcribe voice audio via Spring Boot Gateway -> AI Service
+   */
+  async transcribeVoice(audioBlob: Blob, language = 'Hindi'): Promise<ApiResponse<{ text: string; language: string; confidence: number }>> {
+    const formData = new FormData();
+    formData.append('file', audioBlob, 'recording.webm');
+    formData.append('language', language);
+    const response = await apiClient.post<ApiResponse<{ text: string; language: string; confidence: number }>>(
+      '/ai/voice/transcribe',
+      formData,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 30000,
+      }
+    );
+    return response.data;
+  },
 };
 
 export default aiApi;

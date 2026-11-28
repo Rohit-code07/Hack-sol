@@ -3,10 +3,12 @@ import { BrowserRouter } from 'react-router-dom';
 import AuthProvider from './context/AuthContext';
 import LanguageProvider from './context/LanguageContext';
 import { ToastProvider } from './context/ToastContext';
+import { SpeechProvider } from './context/SpeechContext';
 import AppRoutes from './routes/AppRoutes';
 import ScrollToTop from './components/common/ScrollToTop';
 import OfflineBanner from './components/feedback/OfflineBanner';
 import ErrorBoundary from './components/feedback/ErrorBoundary';
+import SpeechPlayerBar from './components/common/SpeechPlayerBar';
 
 /**
  * Root Application Component.
@@ -22,8 +24,11 @@ export default function App() {
         <LanguageProvider>
           <AuthProvider>
             <ToastProvider>
-              <OfflineBanner />
-              <AppRoutes />
+              <SpeechProvider>
+                <OfflineBanner />
+                <AppRoutes />
+                <SpeechPlayerBar />
+              </SpeechProvider>
             </ToastProvider>
           </AuthProvider>
         </LanguageProvider>

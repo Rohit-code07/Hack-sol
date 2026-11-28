@@ -11,12 +11,16 @@ import com.kisansetu.loan.repository.LoanRecordRepository;
 import com.kisansetu.scheme.entity.MspTransaction;
 import com.kisansetu.scheme.repository.InsuranceRecordRepository;
 import com.kisansetu.scheme.repository.MspTransactionRepository;
+import com.kisansetu.document.dto.VoiceTranscribeResponseDto;
+import com.kisansetu.document.service.DocumentIntelligenceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -34,6 +38,7 @@ public class AiController {
     private final MspTransactionRepository mspTransactionRepository;
     private final InsuranceRecordRepository insuranceRecordRepository;
     private final GrievanceRepository grievanceRepository;
+    private final DocumentIntelligenceService documentIntelligenceService;
 
     @GetMapping("/health")
     @Operation(summary = "Check AI Service Health", description = "Verifies FastAPI, LLM provider, and ChromaDB status")
@@ -123,5 +128,15 @@ public class AiController {
                         .language(request.getTargetLanguage() != null ? request.getTargetLanguage() : "hi")
                         .build());
         return ResponseEntity.ok(ApiResponse.success(response, "Discrepancy Breakdown Generated"));
+    }
+
+    @PostMapping(value = "/voice/transcribe", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(summary = "Transcribe Voice Input", description = "Converts spoken Hindi, English, or Hinglish audio into text for RAG queries")
+    public ResponseEntity<ApiResponse<VoiceTranscribeResponseDto>> transcribeVoice(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "language", defaultValue = "Hindi") String language
+    ) {
+        VoiceTranscribeResponseDto resp = documentIntelligenceService.transcribeVoiceAudio(file, language);
+        return ResponseEntity.ok(ApiResponse.success(resp, "Audio Transcribed Successfully"));
     }
 }

@@ -27,4 +27,4 @@ EXPOSE 8080
 ENV PORT=8080 \
     JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC"
 
-ENTRYPOINT ["sh", "-c", "if [ -n \"$MYSQL_URL\" ] && [ \"${MYSQL_URL#jdbc:}\" = \"$MYSQL_URL\" ]; then export SPRING_DATASOURCE_URL=\"jdbc:$MYSQL_URL\"; elif [ -n \"$DATABASE_URL\" ] && [ \"${DATABASE_URL#jdbc:}\" = \"$DATABASE_URL\" ]; then export SPRING_DATASOURCE_URL=\"jdbc:$DATABASE_URL\"; fi; exec java $JAVA_OPTS -Dserver.port=${PORT:-8080} -Djava.security.egd=file:/dev/./urandom -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "URL=\"${MYSQL_URL:-$DATABASE_URL}\"; if [ -n \"$URL\" ] && [ -z \"$MYSQLHOST\" ]; then NO_P=\"${URL#*://}\"; if echo \"$NO_P\" | grep -q \"@\"; then UP=\"${NO_P%%@*}\"; HPDB=\"${NO_P#*@}\"; export MYSQLUSER=\"${UP%%:*}\"; export MYSQLPASSWORD=\"${UP#*:}\"; else HPDB=\"$NO_P\"; fi; HP=\"${HPDB%%/*}\"; DB=\"${HPDB#*/}\"; export MYSQLDATABASE=\"${DB%%\\?*}\"; export MYSQLHOST=\"${HP%%:*}\"; export MYSQLPORT=\"${HP#*:}\"; [ \"$MYSQLPORT\" = \"$MYSQLHOST\" ] && export MYSQLPORT=3306; fi; exec java $JAVA_OPTS -Dserver.port=${PORT:-8080} -Djava.security.egd=file:/dev/./urandom -jar app.jar"]

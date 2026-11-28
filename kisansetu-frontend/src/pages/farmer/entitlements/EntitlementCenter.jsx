@@ -16,6 +16,7 @@ import {
 import useDocumentTitle from '../../../hooks/useDocumentTitle';
 import PageHeader from '../../../components/common/PageHeader';
 import Tabs from '../../../components/common/Tabs';
+import ListenButton from '../../../components/common/ListenButton';
 import KCCCalculatorTab from './KCCCalculatorTab';
 import MSPVerifierTab from './MSPVerifierTab';
 import InsuranceReconcilerTab from './InsuranceReconcilerTab';
@@ -50,6 +51,16 @@ export default function EntitlementCenter() {
         subtitle={isEn
           ? 'Live statutory calculators for KCC credit limits, minimum support price, and insurance reconciliation.'
           : 'केसीसी ऋण सीमा, न्यूनतम समर्थन मूल्य (MSP) और फसल बीमा समाधान हेतु आधिकारिक गणक।'}
+        actions={
+          <ListenButton
+            sectionId={`entitlement-${currentTab}`}
+            sectionTitle={isEn ? `Entitlement Center - ${currentTab.toUpperCase()}` : `योजना अधिकार केंद्र - ${currentTab.toUpperCase()}`}
+            text={() => isEn
+              ? `Farmer Entitlement Center. Current active tab: ${currentTab === 'kcc' ? 'KCC Limit Calculator' : currentTab === 'msp' ? 'MSP Procurement Verifier' : 'PMFBY Crop Insurance Reconciler'}. Use the statutory calculators to verify approved Scale of Finance and claim entitlements.`
+              : `किसान योजना अधिकार केंद्र। सक्रिय विकल्प: ${currentTab === 'kcc' ? 'केसीसी ऋण सीमा गणक' : currentTab === 'msp' ? 'एमएसपी खरीद सत्यापन' : 'फसल बीमा समाधान'}। आधिकारिक नियमों के अनुसार अपनी पात्रता और हक की गणना करें।`
+            }
+          />
+        }
       />
 
       {/* Accessible Shared Tabs with sliding underline (M1.3, M3.6) */}

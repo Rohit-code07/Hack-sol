@@ -20,6 +20,7 @@ import {
   AlertCircle,
   Check,
   UserCheck,
+  ScanLine,
 } from 'lucide-react';
 import useAuth from '../../hooks/useAuth';
 import useAsync from '../../hooks/useAsync';
@@ -43,6 +44,7 @@ import Field from '../../components/common/Field';
 import AlertRibbon from '../../components/feedback/AlertRibbon';
 import CountUp from '../../components/motion/CountUp';
 import useReducedMotion from '../../hooks/useReducedMotion';
+import ListenButton from '../../components/common/ListenButton';
 import cadastreSeal from '../../assets/cadastre-seal.svg';
 import kccSeal from '../../assets/kcc-seal.svg';
 import pmfbySeal from '../../assets/pmfby-seal.svg';
@@ -250,6 +252,11 @@ export default function FarmerDashboard() {
                 {farmer.id}
               </span>
               <Stamp status={farmer?.status || 'ACTIVE'} size="md" />
+              <ListenButton
+                sectionId="dashboard-profile-header"
+                sectionTitle={isEn ? "Farmer Profile Overview" : "किसान प्रोफाइल अवलोकन"}
+                text={() => `${t('farmer.greeting', 'Welcome')}, ${farmer?.name || 'Farmer'}. ${farmer?.village ? `${farmer.village}, ${farmer.district}` : ''}. ${isEn ? `Total land area: ${farmer?.landArea || '0'} acres. Active credit status: verified.` : `कुल भूमि: ${farmer?.landArea || '0'} एकड़। सक्रिय ऋण स्थिति: सत्यापित।`}`}
+              />
               <Button
                 variant="secondary"
                 size="sm"
@@ -296,6 +303,11 @@ export default function FarmerDashboard() {
                 </h2>
               </div>
               <div className="flex items-center gap-2">
+                <ListenButton
+                  sectionId="dashboard-haq-gap"
+                  sectionTitle={t('farmer.haqGapTitle', 'Direct Entitlement Fulfillment Overview')}
+                  text={() => `${t('farmer.entitlementGap', 'Entitlement Audit')} - ${t('farmer.haqGapTitle', 'Direct Entitlement Fulfillment Overview')}. ${disbursementPercent} percent disbursed. ${isEn ? `Total scheme entitlement: ${formatCurrency(totalEntitlementAmount)}. Disbursed amount received: ${formatCurrency(disbursedAmount)}. Remaining gap: ${formatCurrency(haqGapAmount)}.` : `कुल योजना हक: ${formatCurrency(totalEntitlementAmount)}। प्राप्त राशि: ${formatCurrency(disbursedAmount)}। बकाया शेष: ${formatCurrency(haqGapAmount)}।`}`}
+                />
                 <span className="text-xs font-semibold text-ink-muted">
                   {disbursementPercent}% {t('farmer.disbursed', 'Disbursed')}
                 </span>
@@ -474,11 +486,21 @@ export default function FarmerDashboard() {
 
           {/* Task-Oriented Quick Actions (01 — 04) with stagger fade-up (M3.1) */}
           <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <span className="text-xs uppercase font-bold tracking-wider text-clay-500">
-                01 — 04 • {t('farmer.quickActions', 'Key Farmer Tasks')}
-              </span>
-              <div className="h-px bg-paper-200 flex-1" aria-hidden="true" />
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 flex-1">
+                <span className="text-xs uppercase font-bold tracking-wider text-clay-500">
+                  01 — 05 • {t('farmer.quickActions', 'Key Farmer Tasks')}
+                </span>
+                <div className="h-px bg-paper-200 flex-1" aria-hidden="true" />
+              </div>
+              <ListenButton
+                sectionId="dashboard-key-tasks"
+                sectionTitle={isEn ? "Key Farmer Tasks" : "मुख्य किसान कार्य"}
+                text={() => isEn
+                  ? "Key Farmer Tasks. One: Inspect Land Cadastre Records. Two: Check Credit and KCC Standing. Three: Verify Statutory Entitlements. Four: File or Track a Grievance. Five: AI Document Intelligence - Upload receipts, Khasra, or KCC loan documents for instant discrepancy analysis."
+                  : "मुख्य किसान कार्य। एक: भू-अभिलेख व खसरा जांचें। दो: किसान क्रेडिट कार्ड व ऋण स्थिति देखें। तीन: वैधानिक हक व एमएसपी दरें सत्यापित करें। चार: शिकायत दर्ज व ट्रैक करें। पांच: एआई दस्तावेज़ बुद्धिमत्ता - रसीदें, खसरा अथवा ऋण दस्तावेज़ अपलोड कर विसंगति विश्लेषण प्राप्त करें।"
+                }
+              />
             </div>
 
             <div className="border border-indigo-900 rounded-sm divide-y divide-paper-200 bg-paper-50 shadow-hard-sm">
@@ -564,6 +586,35 @@ export default function FarmerDashboard() {
                     </h3>
                     <p className="text-xs text-ink-muted">
                       {t('farmer.qaGrievanceDesc', 'Submit formal complaints regarding subsidy delays or land record errors.')}
+                    </p>
+                  </div>
+                </div>
+                <ChevronRight className="w-5 h-5 text-indigo-900/60 group-hover:translate-x-1 transition-transform duration-200 shrink-0" />
+              </Link>
+
+              <Link
+                to="/farmer/documents"
+                style={{ animationDelay: '300ms' }}
+                className={`p-4 sm:p-5 flex items-center justify-between hover:bg-paper-100 transition-colors group ${
+                  prefersReducedMotion ? '' : 'animate-fade-up'
+                }`}
+              >
+                <div className="flex items-center gap-4">
+                  <span className="font-serif font-bold text-lg text-clay-500 w-6">05</span>
+                  <div className="w-6 h-6 rounded-xs bg-saffron-500 border border-indigo-900 flex items-center justify-center text-indigo-950 shrink-0">
+                    <ScanLine className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-bold text-sm sm:text-base text-indigo-900 group-hover:text-clay-600 transition-colors">
+                        {isEn ? 'AI Document Intelligence & Verification' : 'एआई दस्तावेज़ विश्लेषण व विसंगति जांच'}
+                      </h3>
+                      <span className="text-[10px] font-bold font-mono px-1.5 py-0.2 bg-saffron-400 text-indigo-950 border border-indigo-900 rounded-2xs">
+                        NEW
+                      </span>
+                    </div>
+                    <p className="text-xs text-ink-muted">
+                      {isEn ? 'Upload receipts, Khasra, or loan letters for instant OCR, classification, and issue detection.' : 'केसीसी, खसरा, मंडी रसीद या बीमा पर्ची अपलोड करें व विसंगतियों की एआई जांच पाएं।'}
                     </p>
                   </div>
                 </div>

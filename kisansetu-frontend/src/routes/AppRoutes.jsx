@@ -19,6 +19,7 @@ const LoanLedgerPage = lazy(() => import('../pages/farmer/LoanLedgerPage'));
 const DiscrepanciesPage = lazy(() => import('../pages/farmer/DiscrepanciesPage'));
 const GrievanceHistoryPage = lazy(() => import('../pages/farmer/GrievanceHistoryPage'));
 const EntitlementCenter = lazy(() => import('../pages/farmer/entitlements/EntitlementCenter'));
+const DocumentIntelligencePage = lazy(() => import('../pages/farmer/DocumentIntelligencePage'));
 
 const BankDashboard = lazy(() => import('../pages/bank/BankDashboard'));
 const FarmerSearchPage = lazy(() => import('../pages/bank/FarmerSearchPage'));
@@ -73,6 +74,7 @@ export default function AppRoutes() {
           <Route path="discrepancies" element={<DiscrepanciesPage />} />
           <Route path="grievances" element={<GrievanceHistoryPage />} />
           <Route path="entitlements" element={<EntitlementCenter />} />
+          <Route path="documents" element={<DocumentIntelligencePage />} />
         </Route>
 
         {/* Bank Officer Portal Pages */}

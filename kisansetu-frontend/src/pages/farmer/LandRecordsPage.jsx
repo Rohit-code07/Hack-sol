@@ -17,6 +17,7 @@ import TermHint from '../../components/common/TermHint';
 import ErrorState from '../../components/common/ErrorState';
 import Modal from '../../components/common/Modal';
 import Field from '../../components/common/Field';
+import ListenButton from '../../components/common/ListenButton';
 
 /**
  * Farmer Land Records Page displaying registered cadastre parcels and title mismatches.
@@ -286,13 +287,23 @@ export default function LandRecordsPage() {
         title={t('land.title', 'Land Revenue Ledger')}
         subtitle={t('land.summary', { count: summary.totalPlots, area: summary.totalAreaHectares })}
         actions={
-          <Button
-            variant="primary"
-            icon={<PlusCircle className="w-4 h-4" />}
-            onClick={() => setIsAddModalOpen(true)}
-          >
-            {isEn ? 'Register Land Parcel' : 'नया खसरा दर्ज करें'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <ListenButton
+              sectionId="land-records-summary"
+              sectionTitle={isEn ? "Land Revenue Ledger" : "भू-अभिलेख खाता"}
+              text={() => isEn
+                ? `Land Revenue Ledger for ${farmerName || 'Farmer'}. Total registered parcels: ${summary.totalPlots}. Total cultivable area: ${summary.totalAreaHectares} hectares. Mismatched parcels requiring title correction: ${summary.mismatchedPlots}.`
+                : `किसान ${farmerName || ''} का भू-अभिलेख खाता। कुल पंजीकृत खसरे: ${summary.totalPlots}। कुल रकबा: ${summary.totalAreaHectares} हेक्टेयर। स्वामित्व विसंगति वाले खसरे: ${summary.mismatchedPlots}।`
+              }
+            />
+            <Button
+              variant="primary"
+              icon={<PlusCircle className="w-4 h-4" />}
+              onClick={() => setIsAddModalOpen(true)}
+            >
+              {isEn ? 'Register Land Parcel' : 'नया खसरा दर्ज करें'}
+            </Button>
+          </div>
         }
       />
 

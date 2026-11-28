@@ -12,10 +12,15 @@ import {
   ShieldCheck,
   RefreshCw,
   Globe,
-  Bot
+  Bot,
+  Mic,
+  MicOff,
+  Square,
+  Volume2,
 } from 'lucide-react';
 import aiApi from '../../api/aiApi';
 import Button from '../common/Button';
+import ListenButton from '../common/ListenButton';
 
 function FormattedMessage({ text }) {
   if (!text) return null;
@@ -115,6 +120,16 @@ export default function KisanAiAssistant() {
   const [langPreference, setLangPreference] = useState(i18n.language === 'en' ? 'English' : 'Hindi');
   const [expandedSources, setExpandedSources] = useState({});
 
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const [voiceError, setVoiceError] = useState(null);
+
+  const recognitionRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -126,6 +141,13 @@ export default function KisanAiAssistant() {
       scrollToBottom();
     }
   }, [messages, isOpen]);
+
+  // Cleanup speech/media on unmount
+  useEffect(() => {
+    return () => {
+      stopRecording();
+    };
+  }, []);
 
   const quickPrompts = isEn
     ? [
@@ -203,6 +225,154 @@ export default function KisanAiAssistant() {
     }));
   };
 
+  // =========================================================================
+  // VOICE RECORDING & SPEECH-TO-TEXT LOGIC
+  // =========================================================================
+  const startRecording = async () => {
+    setVoiceError(null);
+    setRecordingSeconds(0);
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
+      // Primary: Web Speech API (low latency in-browser speech recognition)
+      try {
+        const recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.lang = langPreference === 'English' ? 'en-IN' : 'hi-IN';
+
+        recognition.onstart = () => {
+          setIsRecording(true);
+          recordingTimerRef.current = setInterval(() => {
+            setRecordingSeconds((prev) => prev + 1);
+          }, 1000);
+        };
+
+        recognition.onresult = (event) => {
+          let currentTranscript = '';
+          for (let i = 0; i < event.results.length; i++) {
+            currentTranscript += event.results[i][0].transcript;
+          }
+          if (currentTranscript) {
+            setInput(currentTranscript);
+          }
+        };
+
+        recognition.onerror = (event) => {
+          console.warn('SpeechRecognition error:', event.error);
+          if (event.error === 'not-allowed') {
+            setVoiceError(isEn ? 'Microphone permission denied' : 'माइक्रोफ़ोन की अनुमति अस्वीकृत');
+            stopRecording();
+          } else {
+            // Fallback to MediaRecorder audio capture
+            fallbackToMediaRecorder();
+          }
+        };
+
+        recognition.onend = () => {
+          setIsRecording(false);
+          if (recordingTimerRef.current) {
+            clearInterval(recordingTimerRef.current);
+          }
+        };
+
+        recognitionRef.current = recognition;
+        recognition.start();
+        return;
+      } catch (e) {
+        console.warn('Web Speech API failed to start, falling back to MediaRecorder', e);
+      }
+    }
+
+    // Fallback: MediaRecorder sending audio blob to backend
+    fallbackToMediaRecorder();
+  };
+
+  const fallbackToMediaRecorder = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        stream.getTracks().forEach((track) => track.stop());
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+
+        if (audioBlob.size > 0) {
+          setIsTranscribing(true);
+          try {
+            const res = await aiApi.transcribeVoice(audioBlob, langPreference);
+            if (res?.data?.text) {
+              setInput(res.data.text);
+            }
+          } catch (err) {
+            setVoiceError(
+              isEn ? 'Failed to transcribe audio' : 'ऑडियो ट्रांसक्राइब करने में असमर्थ'
+            );
+          } finally {
+            setIsTranscribing(false);
+          }
+        }
+      };
+
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start();
+      setIsRecording(true);
+
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => prev + 1);
+      }, 1000);
+    } catch (err) {
+      setVoiceError(
+        isEn ? 'Microphone access required for voice input' : 'आवाज इनपुट हेतु माइक्रोफ़ोन अनुमति आवश्यक है'
+      );
+      setIsRecording(false);
+    }
+  };
+
+  const stopRecording = () => {
+    if (recordingTimerRef.current) {
+      clearInterval(recordingTimerRef.current);
+    }
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {}
+      recognitionRef.current = null;
+    }
+
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (e) {}
+      mediaRecorderRef.current = null;
+    }
+
+    setIsRecording(false);
+  };
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      stopRecording();
+    } else {
+      startRecording();
+    }
+  };
+
+  const formatTimer = (secs) => {
+    const m = Math.floor(secs / 60);
+    const s = secs % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
   return (
     <>
       {/* Floating Trigger Button */}
@@ -219,50 +389,49 @@ export default function KisanAiAssistant() {
         </button>
       </div>
 
-      {/* Slide-out / Pop-up Chat Window */}
+      {/* Slide-over / Modal Chat Window */}
       {isOpen && (
-        <div
-          className="fixed bottom-20 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-[440px] max-w-[480px] h-[580px] max-h-[80vh] z-50 bg-paper-50 border-2 border-indigo-900 rounded-sm shadow-hard flex flex-col overflow-hidden animate-fade-in"
-          role="dialog"
-          aria-labelledby="ai-chat-title"
-        >
+        <div className="fixed bottom-20 right-4 sm:right-6 w-[94vw] sm:w-[450px] h-[580px] max-h-[82vh] bg-paper-50 border-2 border-indigo-900 rounded-sm shadow-hard-lg z-50 flex flex-col overflow-hidden animate-fade-in font-sans">
           {/* Header */}
-          <div className="bg-indigo-950 text-paper-50 px-4 py-3 border-b-2 border-indigo-900 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xs bg-saffron-500 flex items-center justify-center text-indigo-950 font-bold border border-indigo-900">
-                <Bot className="w-5 h-5" />
+          <div className="bg-paper-100 p-3.5 border-b-2 border-indigo-900 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-xs bg-saffron-500 border border-indigo-900 flex items-center justify-center text-indigo-950">
+                <Bot className="w-4 h-4" />
               </div>
               <div>
-                <h3 id="ai-chat-title" className="font-serif font-bold text-sm leading-tight text-paper-50">
-                  {isEn ? 'KisanSetu Policy Assistant' : 'किसान नीति सहायक'}
-                </h3>
-                <span className="text-[10px] text-saffron-300 font-mono tracking-wider block">
-                  {isEn ? 'Grounded Government Scheme RAG' : 'सत्यापित सरकारी नीति RAG'}
-                </span>
+                <h4 className="font-serif font-bold text-sm text-indigo-950 leading-tight">
+                  {isEn ? 'KisanSetu Policy Assistant' : 'किसानसेतु नीति सहायक'}
+                </h4>
+                <div className="flex items-center gap-1.5 text-[10px] text-sage-800 font-bold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-sage-500 animate-pulse" />
+                  <span>{isEn ? '100% Policy Grounded RAG' : 'सत्यापित नीति भंडार (RAG)'}</span>
+                </div>
               </div>
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Language Switcher */}
               <button
-                onClick={() => setLangPreference(langPreference === 'Hindi' ? 'English' : 'Hindi')}
-                className="text-[11px] font-mono px-2 py-0.5 border border-indigo-800 bg-indigo-900 text-saffron-300 rounded-xs hover:bg-indigo-800"
-                title="Toggle Language"
+                type="button"
+                onClick={() => setLangPreference((prev) => (prev === 'English' ? 'Hindi' : 'English'))}
+                className="px-2 py-0.5 text-[10px] font-mono font-bold bg-paper-50 hover:bg-paper-200 border border-indigo-900 text-indigo-950 rounded-xs flex items-center gap-1 shadow-hard-xs"
+                title="Switch Query Language"
               >
-                {langPreference}
+                <Globe className="w-3 h-3 text-clay-600" />
+                <span>{langPreference}</span>
               </button>
+
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-paper-300 hover:text-paper-50 p-1"
-                aria-label="Close"
+                className="p-1 text-ink-muted hover:text-indigo-950 hover:bg-paper-200 rounded-xs transition-colors"
+                aria-label="Close Assistant"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
-          {/* Messages Feed */}
-          <div className="flex-1 p-3.5 overflow-y-auto space-y-3 bg-paper-100 bg-grain text-xs">
+          {/* Messages Stream */}
+          <div className="flex-1 p-3 overflow-y-auto space-y-3 bg-paper-100/50 text-xs">
             {messages.map((m) => {
               const isUser = m.role === 'user';
               return (
@@ -334,14 +503,24 @@ export default function KisanAiAssistant() {
                       </div>
                     )}
                   </div>
-                  <span className="text-[9px] text-ink-muted px-1">{m.timestamp}</span>
+
+                  <div className="flex items-center gap-2 px-1">
+                    <span className="text-[9px] text-ink-muted">{m.timestamp}</span>
+                    {!isUser && (
+                      <ListenButton
+                        text={m.text}
+                        title={isEn ? "Policy Answer" : "नीति उत्तर"}
+                        size="sm"
+                      />
+                    )}
+                  </div>
                 </div>
               );
             })}
 
             {loading && (
-              <div className="flex items-center gap-2 text-clay-700 text-xs italic p-2 bg-paper-50 border border-paper-200 rounded-xs w-fit">
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              <div className="flex items-center gap-2 text-clay-700 text-xs italic p-2 bg-paper-50 border border-paper-200 rounded-xs w-fit shadow-hard-xs">
+                <RefreshCw className="w-3.5 h-3.5 animate-spin text-saffron-600" />
                 <span>{isEn ? 'Searching official policy repository...' : 'आधिकारिक नीति भंडार में खोज जारी है...'}</span>
               </div>
             )}
@@ -358,7 +537,7 @@ export default function KisanAiAssistant() {
               <button
                 key={idx}
                 onClick={() => handleSend(p)}
-                disabled={loading}
+                disabled={loading || isRecording}
                 className="px-2 py-0.5 bg-paper-50 hover:bg-white text-indigo-900 border border-paper-300 rounded-xs text-[10px] font-serif transition-colors truncate max-w-[200px]"
               >
                 {p}
@@ -366,10 +545,61 @@ export default function KisanAiAssistant() {
             ))}
           </div>
 
-          {/* Input Box */}
+          {/* Active Voice Recording Status Bar */}
+          {isRecording && (
+            <div className="px-3 py-2 bg-rust-50 border-t border-rust-200 flex items-center justify-between animate-fade-in text-xs">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rust-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rust-600" />
+                </span>
+
+                {/* Animated Waveform */}
+                <div className="flex items-center gap-0.5 h-3.5 px-0.5" aria-hidden="true">
+                  <span className="w-0.5 bg-rust-600 rounded-full h-full animate-wave" style={{ animationDelay: '0s' }} />
+                  <span className="w-0.5 bg-rust-600 rounded-full h-full animate-wave" style={{ animationDelay: '0.15s' }} />
+                  <span className="w-0.5 bg-rust-600 rounded-full h-full animate-wave" style={{ animationDelay: '0.3s' }} />
+                  <span className="w-0.5 bg-rust-600 rounded-full h-full animate-wave" style={{ animationDelay: '0.45s' }} />
+                </div>
+
+                <span className="font-bold text-rust-800">
+                  {langPreference === 'Hindi' ? 'सुन रहे हैं (बोलें)...' : 'Listening (Speak now)...'}
+                </span>
+                <span className="font-mono text-[11px] text-rust-700 bg-rust-100 px-1.5 py-0.2 rounded-xs font-bold">
+                  {formatTimer(recordingSeconds)}
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={stopRecording}
+                className="px-2 py-0.5 bg-rust-600 hover:bg-rust-700 text-white rounded-xs font-bold text-[10px] flex items-center gap-1 shadow-hard-xs transition-colors"
+              >
+                <Square className="w-2.5 h-2.5 fill-current" />
+                <span>{isEn ? 'Done' : 'पूर्ण'}</span>
+              </button>
+            </div>
+          )}
+
+          {isTranscribing && (
+            <div className="px-3 py-1.5 bg-saffron-50 border-t border-saffron-200 flex items-center gap-2 text-xs text-indigo-950 font-medium">
+              <RefreshCw className="w-3.5 h-3.5 animate-spin text-saffron-600" />
+              <span>{isEn ? 'Transcribing audio with Gemini...' : 'ऑडियो का पाठ तैयार किया जा रहा है...'}</span>
+            </div>
+          )}
+
+          {voiceError && (
+            <div className="px-3 py-1 bg-rust-100 border-t border-rust-300 text-rust-800 text-[11px] flex items-center justify-between">
+              <span>{voiceError}</span>
+              <button type="button" onClick={() => setVoiceError(null)} className="text-rust-900 font-bold ml-2">×</button>
+            </div>
+          )}
+
+          {/* Input Box with Voice & Send Controls */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
+              if (isRecording) stopRecording();
               handleSend();
             }}
             className="p-2.5 bg-paper-50 border-t border-paper-300 flex items-center gap-2"
@@ -380,12 +610,30 @@ export default function KisanAiAssistant() {
               onChange={(e) => setInput(e.target.value)}
               placeholder={
                 isEn
-                  ? 'Ask about KCC interest, MSP mandi dates, PMFBY...'
-                  : 'केसीसी ब्याज, एमएसपी भुगतान, फसल बीमा के नियम पूछें...'
+                  ? 'Ask or speak about KCC interest, MSP dates, PMFBY...'
+                  : 'केसीसी ब्याज, एमएसपी भुगतान, फसल बीमा के नियम पूछें या बोलें...'
               }
               disabled={loading}
               className="flex-1 bg-white text-indigo-950 placeholder-ink-muted px-3 py-2 border border-paper-300 rounded-xs text-xs focus:outline-none focus:ring-1 focus:ring-indigo-900"
             />
+
+            {/* Voice Input Microphone Button */}
+            <button
+              type="button"
+              onClick={toggleRecording}
+              disabled={loading}
+              aria-label={isRecording ? (isEn ? 'Stop recording' : 'रिकॉर्डिंग बंद करें') : (isEn ? 'Start voice input' : 'आवाज में पूछें')}
+              title={isRecording ? (isEn ? 'Stop recording' : 'रिकॉर्डिंग रोकें') : (isEn ? 'Voice input (Hindi/English)' : 'आवाज से पूछें (हिंदी/अंग्रेजी)')}
+              className={`p-2 rounded-xs border transition-all active:scale-95 ${
+                isRecording
+                  ? 'bg-rust-600 text-white border-rust-700 animate-pulse shadow-hard-xs'
+                  : 'bg-paper-100 hover:bg-paper-200 text-clay-600 border-paper-300 hover:text-indigo-950'
+              }`}
+            >
+              {isRecording ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+            </button>
+
+            {/* Send Button */}
             <Button
               type="submit"
               variant="primary"

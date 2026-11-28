@@ -19,6 +19,7 @@ import ErrorState from '../../components/common/ErrorState';
 import CountUp from '../../components/motion/CountUp';
 import Modal from '../../components/common/Modal';
 import Field from '../../components/common/Field';
+import ListenButton from '../../components/common/ListenButton';
 
 /**
  * Farmer Loan Ledger Page displaying institutional credit accounts, NPA status, and limits.
@@ -247,13 +248,23 @@ export default function LoanLedgerPage() {
         title={isEn ? 'Farmer Credit Ledger' : 'किसान ऋण बही'}
         subtitle={isEn ? 'Live tracking of sanctioned limits, outstanding balances, and repayment standing.' : 'स्वीकृत सीमा, वर्तमान बकाया राशि और अदायगी स्थिति का प्रत्यक्ष विवरण।'}
         actions={
-          <Button
-            variant="primary"
-            icon={<PlusCircle className="w-4 h-4" />}
-            onClick={() => setIsAddModalOpen(true)}
-          >
-            {isEn ? 'Register Loan Account' : 'नया ऋण दर्ज करें'}
-          </Button>
+          <div className="flex items-center gap-2">
+            <ListenButton
+              sectionId="loans-summary-header"
+              sectionTitle={isEn ? "Farmer Credit Ledger" : "किसान ऋण बही"}
+              text={() => isEn
+                ? `Farmer Credit Ledger. Total sanctioned limit: ${formatCurrency(totalSanctioned)}. Total current outstanding: ${formatCurrency(totalOutstanding)}. Overdue or NPA accounts: ${npaList.length}.`
+                : `किसान ऋण बही। कुल स्वीकृत सीमा: ${formatCurrency(totalSanctioned)}। कुल वर्तमान बकाया: ${formatCurrency(totalOutstanding)}। एनपीए अथवा अतिदेय खाते: ${npaList.length}।`
+              }
+            />
+            <Button
+              variant="primary"
+              icon={<PlusCircle className="w-4 h-4" />}
+              onClick={() => setIsAddModalOpen(true)}
+            >
+              {isEn ? 'Register Loan Account' : 'नया ऋण दर्ज करें'}
+            </Button>
+          </div>
         }
       />
 
