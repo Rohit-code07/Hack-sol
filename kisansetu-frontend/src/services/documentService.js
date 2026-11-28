@@ -24,6 +24,7 @@ export async function uploadAndAnalyzeDocument(file, language = 'hi', farmerId =
   const formData = new FormData();
   formData.append('file', file);
   formData.append('language', language);
+  formData.append('preferredLanguage', language);
   if (activeFarmerId) {
     formData.append('farmerId', activeFarmerId);
   }

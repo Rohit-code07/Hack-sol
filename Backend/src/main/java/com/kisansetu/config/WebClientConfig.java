@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class WebClientConfig {
 
-    @Value("${kisansetu.ai-service.base-url:http://localhost:8000}")
+    @Value("${kisansetu.ai-service.base-url:http://127.0.0.1:8000}")
     private String aiServiceBaseUrl;
 
     @Value("${kisansetu.ai-service.timeout-seconds:15}")

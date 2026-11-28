@@ -1,6 +1,7 @@
 package com.kisansetu.document.repository;
 
 import com.kisansetu.document.entity.UploadedDocument;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,6 +12,7 @@ import java.util.UUID;
 @Repository
 public interface UploadedDocumentRepository extends JpaRepository<UploadedDocument, UUID> {
 
+    @EntityGraph(attributePaths = {"issues"})
     List<UploadedDocument> findByFarmerIdOrderByCreatedAtDesc(UUID farmerId);
 
     Optional<UploadedDocument> findByIdAndFarmerId(UUID id, UUID farmerId);

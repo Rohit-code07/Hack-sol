@@ -340,6 +340,9 @@ public class DocumentIntelligenceService {
 
     @Transactional(readOnly = true)
     public List<DocumentSummaryDto> listFarmerDocuments(UUID farmerId) {
+        if (farmerId == null) {
+            return Collections.emptyList();
+        }
         return uploadedDocumentRepository.findByFarmerIdOrderByCreatedAtDesc(farmerId).stream()
                 .map(d -> DocumentSummaryDto.builder()
                         .id(d.getId())
